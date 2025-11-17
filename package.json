@@ -1,0 +1,19 @@
+{
+  "name": "timesheet-monorepo",
+  "private": true,
+  "workspaces": [
+    "admin_app",
+    "worker_app",
+    "timesheet_backend"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
+  },
+  "devDependencies": {
+    "turbo": "latest"
+  },
+  "packageManager": "npm@11.6.2"
+}
