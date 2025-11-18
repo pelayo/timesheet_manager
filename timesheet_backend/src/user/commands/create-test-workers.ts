@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { NestFactory } from '@nestjs/core'
+import { ContextIdFactory, NestFactory } from '@nestjs/core'
 import { ConflictException } from '@nestjs/common'
 import { AppModule } from '../../app.module'
 import { UserService } from '../user.service'
@@ -27,13 +27,16 @@ const workerSeeds: CreateUserDto[] = [
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule)
-  const userService = app.get(UserService)
 
   const actor: User = {
     id: 0,
     email: 'system@local',
     role: Role.SuperAdmin,
   } as User
+
+  const contextId = ContextIdFactory.create()
+  app.registerRequestByContextId({ user: actor }, contextId)
+  const userService = await app.resolve(UserService, contextId)
 
   const results = []
 

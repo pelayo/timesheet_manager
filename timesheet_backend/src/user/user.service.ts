@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Scope,
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { In, Repository } from 'typeorm'
@@ -11,12 +12,14 @@ import { User } from './entities/user.entity'
 import { Role } from './entities/role.enum'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
+import { CurrentUserService } from '../common/current-user.service'
 
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly currentUserService: CurrentUserService,
   ) {}
 
   async findOneByEmail(email: string): Promise<User | null> {
@@ -34,7 +37,8 @@ export class UserService {
     return this.userRepository.findOne({ where: { id } })
   }
 
-  async listManagedUsers(actor: User): Promise<User[]> {
+  async listManagedUsers(): Promise<User[]> {
+    const actor = this.currentUserService.get()
     this.ensureManager(actor.role)
 
     const where =
@@ -45,7 +49,8 @@ export class UserService {
     return this.userRepository.find({ where })
   }
 
-  async getManagedUser(actor: User, id: number): Promise<User> {
+  async getManagedUser(id: number): Promise<User> {
+    const actor = this.currentUserService.get()
     this.ensureManager(actor.role)
     const user = await this.userRepository.findOne({ where: { id } })
 
@@ -57,7 +62,8 @@ export class UserService {
     return user
   }
 
-  async createUser(actor: User, dto: CreateUserDto): Promise<User> {
+  async createUser(dto: CreateUserDto): Promise<User> {
+    const actor = this.currentUserService.get()
     this.ensureManager(actor.role)
     this.ensureRoleAllowed(actor.role, dto.role)
 
@@ -67,7 +73,8 @@ export class UserService {
     return this.userRepository.save(user)
   }
 
-  async updateUser(actor: User, id: number, dto: UpdateUserDto): Promise<User> {
+  async updateUser(id: number, dto: UpdateUserDto): Promise<User> {
+    const actor = this.currentUserService.get()
     this.ensureManager(actor.role)
     const user = await this.userRepository.findOne({ where: { id } })
 
@@ -87,7 +94,8 @@ export class UserService {
     return this.userRepository.save(updated)
   }
 
-  async deleteUser(actor: User, id: number): Promise<void> {
+  async deleteUser(id: number): Promise<void> {
+    const actor = this.currentUserService.get()
     this.ensureManager(actor.role)
     const user = await this.userRepository.findOne({ where: { id } })
 

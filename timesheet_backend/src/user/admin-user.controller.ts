@@ -13,57 +13,56 @@ import {
 } from '@nestjs/common'
 import { AuthGuard } from '@nestjs/passport'
 import { plainToInstance } from 'class-transformer'
-import { GetUser } from '../auth/decorators/get-user.decorator'
-import { User } from './entities/user.entity'
 import { UserService } from './user.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { UserResponseDto } from './dto/user-response.dto'
+import { Roles } from '../auth/roles.decorator'
+import { RolesGuard } from '../auth/roles.guard'
+import { Role } from './entities/role.enum'
 
 @Controller('admin/users')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @UseInterceptors(ClassSerializerInterceptor)
 export class AdminUserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  async list(@GetUser() actor: User): Promise<UserResponseDto[]> {
-    const users = await this.userService.listManagedUsers(actor)
+  @Roles(Role.SuperAdmin, Role.Admin)
+  async list(): Promise<UserResponseDto[]> {
+    const users = await this.userService.listManagedUsers()
     return users.map((user) =>
       plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true }),
     )
   }
 
   @Get(':id')
-  async getById(
-    @GetUser() actor: User,
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<UserResponseDto> {
-    const user = await this.userService.getManagedUser(actor, id)
+  @Roles(Role.SuperAdmin, Role.Admin)
+  async getById(@Param('id', ParseIntPipe) id: number): Promise<UserResponseDto> {
+    const user = await this.userService.getManagedUser(id)
     return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true })
   }
 
   @Post()
-  async create(
-    @GetUser() actor: User,
-    @Body() dto: CreateUserDto,
-  ): Promise<UserResponseDto> {
-    const user = await this.userService.createUser(actor, dto)
+  @Roles(Role.SuperAdmin, Role.Admin)
+  async create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
+    const user = await this.userService.createUser(dto)
     return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true })
   }
 
   @Patch(':id')
+  @Roles(Role.SuperAdmin, Role.Admin)
   async update(
-    @GetUser() actor: User,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUserDto,
   ): Promise<UserResponseDto> {
-    const user = await this.userService.updateUser(actor, id, dto)
+    const user = await this.userService.updateUser(id, dto)
     return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true })
   }
 
   @Delete(':id')
-  async delete(@GetUser() actor: User, @Param('id', ParseIntPipe) id: number): Promise<void> {
-    await this.userService.deleteUser(actor, id)
+  @Roles(Role.SuperAdmin, Role.Admin)
+  async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    await this.userService.deleteUser(id)
   }
 }

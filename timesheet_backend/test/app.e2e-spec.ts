@@ -2,10 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { INestApplication, ValidationPipe } from '@nestjs/common'
 import request from 'supertest'
 import { AppModule } from './../src/app.module'
+import { getRepositoryToken } from '@nestjs/typeorm'
+import { User } from '../src/user/entities/user.entity'
+import { Repository } from 'typeorm'
+import { Role } from '../src/user/entities/role.enum'
 
 describe('App and Auth (e2e)', () => {
   let app: INestApplication
   let httpServer: any
+  let userRepository: Repository<User>
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -16,10 +21,27 @@ describe('App and Auth (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe())
     await app.init()
     httpServer = app.getHttpServer()
+    userRepository = app.get<Repository<User>>(getRepositoryToken(User))
+
+    await userRepository.clear()
+    await userRepository.save({
+      email: 'test@example.com',
+      password: 'password',
+      role: Role.SuperAdmin,
+    })
   })
 
   afterAll(async () => {
     await app.close()
+  })
+
+  beforeEach(async () => {
+    await userRepository.clear()
+    await userRepository.save({
+      email: 'test@example.com',
+      password: 'password',
+      role: Role.SuperAdmin,
+    })
   })
 
   it('/ (GET)', () => {
@@ -66,11 +88,11 @@ describe('App and Auth (e2e)', () => {
         .set('Authorization', `Bearer ${token}`)
         .expect(200)
 
-      expect(meResponse.body).toEqual({
-        id: 1,
+      expect(meResponse.body).toMatchObject({
+        id: expect.any(Number),
         email: 'test@example.com',
+        role: Role.SuperAdmin,
       })
     })
   })
 })
-
