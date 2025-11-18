@@ -10,18 +10,18 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.userService.findOneByEmail(email)
-    // In a real application, you would compare hashed passwords.
+  async validateUser(email: string, pass: string): Promise<User | null> {
+    const user = await this.userService.findOneByEmailWithPassword(email)
+
     if (user && user.password === pass) {
-      const { password, ...result } = user
-      return result
+      const { password, ...safeUser } = user
+      return safeUser as User
     }
     return null
   }
 
   async login(user: User) {
-    const payload = { email: user.email, sub: user.id }
+    const payload = { email: user.email, sub: user.id, role: user.role }
     return {
       access_token: this.jwtService.sign(payload),
     }

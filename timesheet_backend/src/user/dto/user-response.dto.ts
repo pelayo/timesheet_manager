@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { Role } from '../entities/role.enum'
 
-export class MeUserDto {
+export class UserResponseDto {
   @Expose()
   id: number
 
@@ -10,4 +10,10 @@ export class MeUserDto {
 
   @Expose()
   role: Role
+
+  @Expose()
+  createdAt: Date
+
+  @Expose()
+  updatedAt: Date
 }
