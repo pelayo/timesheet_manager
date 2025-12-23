@@ -11,17 +11,17 @@ const workerSeeds: CreateUserDto[] = [
   {
     email: 'worker.one@example.com',
     password: 'password',
-    role: Role.Worker,
+    role: Role.User,
   },
   {
     email: 'worker.two@example.com',
     password: 'password',
-    role: Role.Worker,
+    role: Role.User,
   },
   {
     email: 'worker.three@example.com',
     password: 'password',
-    role: Role.Worker,
+    role: Role.User,
   },
 ]
 
@@ -29,20 +29,20 @@ async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule)
 
   const actor: User = {
-    id: 0,
+    id: '00000000-0000-0000-0000-000000000000',
     email: 'system@local',
-    role: Role.SuperAdmin,
+    role: Role.Admin,
   } as User
 
   const contextId = ContextIdFactory.create()
   app.registerRequestByContextId({ user: actor }, contextId)
   const userService = await app.resolve(UserService, contextId)
 
-  const results = []
+  const results: User[] = []
 
   for (const seed of workerSeeds) {
     try {
-      const created = await userService.createUser(actor, seed)
+      const created = await userService.createUser(seed)
       results.push(created)
     } catch (error) {
       const isConflict =

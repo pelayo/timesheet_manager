@@ -1,123 +1,81 @@
-import { TestingModule, Test } from '@nestjs/testing'
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
-import { ContextIdFactory } from '@nestjs/core'
-import { UserService } from './user.service'
-import { User } from './entities/user.entity'
-import { Role } from './entities/role.enum'
-import { CurrentUserService } from '../common/current-user.service'
-import { CreateUserDto } from './dto/create-user.dto'
-import { UpdateUserDto } from './dto/update-user.dto'
-import { ForbiddenException } from '@nestjs/common'
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { UserService } from './user.service';
+import { User } from './entities/user.entity';
+import { Role } from './entities/role.enum';
+import { CurrentUserService } from '../common/current-user.service';
+import { ConflictException, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 
-const buildActor = (role: Role): User =>
-  ({
-    id: Math.floor(Math.random() * 10000) + 1,
-    email: `${role}@example.com`,
-    role,
-  }) as User
+const mockUserRepository = {
+  create: jest.fn(),
+  save: jest.fn(),
+  findOne: jest.fn(),
+  find: jest.fn(),
+  delete: jest.fn(),
+};
 
-describe('UserService (role enforcement)', () => {
-  let moduleRef: TestingModule
-  let repository: Repository<User>
+const mockCurrentUserService = {
+  get: jest.fn(),
+};
 
-  beforeAll(async () => {
-    moduleRef = await Test.createTestingModule({
-      imports: [
-        TypeOrmModule.forRoot({
-          type: 'sqlite',
-          database: ':memory:',
-          dropSchema: true,
-          entities: [User],
-          synchronize: true,
-        }),
-        TypeOrmModule.forFeature([User]),
-      ],
-      providers: [UserService, CurrentUserService],
-    }).compile()
-
-    repository = moduleRef.get<Repository<User>>(getRepositoryToken(User))
-  })
+describe('UserService', () => {
+  let service: UserService;
 
   beforeEach(async () => {
-    await repository.clear()
-  })
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UserService,
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepository,
+        },
+        {
+          provide: CurrentUserService,
+          useValue: mockCurrentUserService,
+        },
+      ],
+    }).compile();
 
-  const resolveService = async (actor: User) => {
-    const contextId = ContextIdFactory.create()
-    moduleRef.registerRequestByContextId({ user: actor }, contextId)
-    return moduleRef.resolve(UserService, contextId)
-  }
+    service = await module.resolve<UserService>(UserService);
+  });
 
-  it('allows super-admin to create admin and worker users', async () => {
-    const service = await resolveService(buildActor(Role.SuperAdmin))
+  describe('create', () => {
+    it('should throw Forbidden if actor is not Admin', async () => {
+      mockCurrentUserService.get.mockReturnValue({ role: Role.User });
+      await expect(service.createUser({ email: 'e', password: 'p', role: Role.User })).rejects.toThrow(ForbiddenException);
+    });
 
-    const adminDto: CreateUserDto = {
-      email: 'admin@example.com',
-      password: 'password',
-      role: Role.Admin,
-    }
-    const workerDto: CreateUserDto = {
-      email: 'worker@example.com',
-      password: 'password',
-      role: Role.Worker,
-    }
+    it('should throw Conflict if email exists', async () => {
+      mockCurrentUserService.get.mockReturnValue({ role: Role.Admin });
+      mockUserRepository.findOne.mockResolvedValue({ id: 'u1' });
+      await expect(service.createUser({ email: 'e', password: 'p', role: Role.User })).rejects.toThrow(ConflictException);
+    });
 
-    const admin = await service.createUser(adminDto)
-    const worker = await service.createUser(workerDto)
+    it('should create user', async () => {
+      mockCurrentUserService.get.mockReturnValue({ role: Role.Admin });
+      mockUserRepository.findOne.mockResolvedValue(null);
+      const dto = { email: 'e', password: 'p', role: Role.User };
+      mockUserRepository.create.mockReturnValue(dto);
+      mockUserRepository.save.mockResolvedValue(dto);
 
-    expect(admin.role).toBe(Role.Admin)
-    expect(worker.role).toBe(Role.Worker)
-  })
+      const result = await service.createUser(dto);
+      expect(result).toEqual(dto);
+    });
+  });
 
-  it('prevents admin from creating admin users', async () => {
-    const service = await resolveService(buildActor(Role.Admin))
-    const adminDto: CreateUserDto = {
-      email: 'new-admin@example.com',
-      password: 'password',
-      role: Role.Admin,
-    }
+  describe('delete', () => {
+      it('should throw BadRequest if deleting self', async () => {
+          mockCurrentUserService.get.mockReturnValue({ id: 'admin-id', role: Role.Admin });
+          await expect(service.deleteUser('admin-id')).rejects.toThrow(BadRequestException);
+      });
 
-    await expect(service.createUser(adminDto)).rejects.toBeInstanceOf(ForbiddenException)
-  })
+      it('should delete user', async () => {
+          mockCurrentUserService.get.mockReturnValue({ id: 'admin-id', role: Role.Admin });
+          mockUserRepository.findOne.mockResolvedValue({ id: 'other-id' });
+          mockUserRepository.delete.mockResolvedValue({});
 
-  it('allows admin to create worker users', async () => {
-    const service = await resolveService(buildActor(Role.Admin))
-    const workerDto: CreateUserDto = {
-      email: 'worker@example.com',
-      password: 'password',
-      role: Role.Worker,
-    }
-
-    const worker = await service.createUser(workerDto)
-    expect(worker.role).toBe(Role.Worker)
-  })
-
-  it('prevents admin from deleting admins', async () => {
-    const superAdminService = await resolveService(buildActor(Role.SuperAdmin))
-    const admin = await superAdminService.createUser({
-      email: 'admin@example.com',
-      password: 'password',
-      role: Role.Admin,
-    })
-
-    const adminService = await resolveService(buildActor(Role.Admin))
-    await expect(adminService.deleteUser(admin.id)).rejects.toBeInstanceOf(ForbiddenException)
-  })
-
-  it('updates user data when permitted', async () => {
-    const superAdminService = await resolveService(buildActor(Role.SuperAdmin))
-    const worker = await superAdminService.createUser({
-      email: 'worker@example.com',
-      password: 'password',
-      role: Role.Worker,
-    })
-
-    const updateDto: UpdateUserDto = {
-      email: 'updated.worker@example.com',
-    }
-
-    const updated = await superAdminService.updateUser(worker.id, updateDto)
-    expect(updated.email).toBe(updateDto.email)
-  })
-})
+          await service.deleteUser('other-id');
+          expect(mockUserRepository.delete).toHaveBeenCalledWith('other-id');
+      });
+  });
+});

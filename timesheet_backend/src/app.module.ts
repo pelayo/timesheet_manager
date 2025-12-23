@@ -6,6 +6,11 @@ import { AuthModule } from './auth/auth.module'
 import { UserModule } from './user/user.module'
 import { ConfigModule } from './config/config.module'
 import { ConfigService } from './config/config.service'
+import { ProjectsModule } from './projects/projects.module';
+import { TasksModule } from './tasks/tasks.module';
+import { ProjectMembersModule } from './project-members/project-members.module';
+import { TimeEntriesModule } from './time-entries/time-entries.module';
+import { ReportingModule } from './reporting/reporting.module';
 
 @Module({
   imports: [
@@ -13,10 +18,18 @@ import { ConfigService } from './config/config.service'
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => config.getDatabaseConfig(),
+      useFactory: (config: ConfigService) => ({
+        ...config.getDatabaseConfig(),
+        autoLoadEntities: true,
+      }),
     }),
     AuthModule,
     UserModule,
+    ProjectsModule,
+    TasksModule,
+    ProjectMembersModule,
+    TimeEntriesModule,
+    ReportingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

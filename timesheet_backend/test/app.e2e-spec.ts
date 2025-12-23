@@ -27,7 +27,7 @@ describe('App and Auth (e2e)', () => {
     await userRepository.save({
       email: 'test@example.com',
       password: 'password',
-      role: Role.SuperAdmin,
+      role: Role.Admin,
     })
   })
 
@@ -40,7 +40,7 @@ describe('App and Auth (e2e)', () => {
     await userRepository.save({
       email: 'test@example.com',
       password: 'password',
-      role: Role.SuperAdmin,
+      role: Role.Admin,
     })
   })
 
@@ -89,9 +89,9 @@ describe('App and Auth (e2e)', () => {
         .expect(200)
 
       expect(meResponse.body).toMatchObject({
-        id: expect.any(Number),
+        id: expect.any(String),
         email: 'test@example.com',
-        role: Role.SuperAdmin,
+        role: Role.Admin,
       })
     })
   })

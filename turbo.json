@@ -9,6 +9,9 @@
     "test": {
       "inputs": ["src/**/*.spec.ts", "test/**/*.spec.ts"]
     },
+    "test:e2e": {
+      "inputs": ["test/**/*.e2e-spec.ts"]
+    },
     "dev": {
       "cache": false,
       "persistent": true

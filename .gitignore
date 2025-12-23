@@ -23,6 +23,8 @@ dist/
 build/
 .next/
 .vite/
+coverage/
+coverage-e2e/
 
 # Dependency directories
 node_modules/

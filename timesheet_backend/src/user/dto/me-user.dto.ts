@@ -3,7 +3,7 @@ import { Role } from '../entities/role.enum'
 
 export class MeUserDto {
   @Expose()
-  id: number
+  id: string
 
   @Expose()
   email: string

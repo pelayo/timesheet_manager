@@ -5,7 +5,7 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
   Patch,
   Post,
   UseGuards,
@@ -28,7 +28,7 @@ export class AdminUserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  @Roles(Role.SuperAdmin, Role.Admin)
+  @Roles(Role.Admin)
   async list(): Promise<UserResponseDto[]> {
     const users = await this.userService.listManagedUsers()
     return users.map((user) =>
@@ -37,23 +37,23 @@ export class AdminUserController {
   }
 
   @Get(':id')
-  @Roles(Role.SuperAdmin, Role.Admin)
-  async getById(@Param('id', ParseIntPipe) id: number): Promise<UserResponseDto> {
+  @Roles(Role.Admin)
+  async getById(@Param('id', ParseUUIDPipe) id: string): Promise<UserResponseDto> {
     const user = await this.userService.getManagedUser(id)
     return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true })
   }
 
   @Post()
-  @Roles(Role.SuperAdmin, Role.Admin)
+  @Roles(Role.Admin)
   async create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
     const user = await this.userService.createUser(dto)
     return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true })
   }
 
   @Patch(':id')
-  @Roles(Role.SuperAdmin, Role.Admin)
+  @Roles(Role.Admin)
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserDto,
   ): Promise<UserResponseDto> {
     const user = await this.userService.updateUser(id, dto)
@@ -61,8 +61,8 @@ export class AdminUserController {
   }
 
   @Delete(':id')
-  @Roles(Role.SuperAdmin, Role.Admin)
-  async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
+  @Roles(Role.Admin)
+  async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     await this.userService.deleteUser(id)
   }
 }

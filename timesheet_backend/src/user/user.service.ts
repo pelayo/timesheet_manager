@@ -7,7 +7,7 @@ import {
   Scope,
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { In, Repository } from 'typeorm'
+import { Repository } from 'typeorm'
 import { User } from './entities/user.entity'
 import { Role } from './entities/role.enum'
 import { CreateUserDto } from './dto/create-user.dto'
@@ -33,39 +33,37 @@ export class UserService {
     })
   }
 
-  async findById(id: number): Promise<User | null> {
+  async findById(id: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { id } })
   }
 
   async listManagedUsers(): Promise<User[]> {
     const actor = this.currentUserService.get()
-    this.ensureManager(actor.role)
-
-    const where =
-      actor.role === Role.Admin
-        ? { role: Role.Worker }
-        : { role: In([Role.Admin, Role.Worker]) }
-
-    return this.userRepository.find({ where })
+    if (actor.role !== Role.Admin) {
+      throw new ForbiddenException('Insufficient permissions')
+    }
+    return this.userRepository.find()
   }
 
-  async getManagedUser(id: number): Promise<User> {
+  async getManagedUser(id: string): Promise<User> {
     const actor = this.currentUserService.get()
-    this.ensureManager(actor.role)
+    if (actor.role !== Role.Admin) {
+      throw new ForbiddenException('Insufficient permissions')
+    }
     const user = await this.userRepository.findOne({ where: { id } })
 
     if (!user) {
       throw new NotFoundException('User not found')
     }
 
-    this.ensureCanManage(actor.role, user.role)
     return user
   }
 
   async createUser(dto: CreateUserDto): Promise<User> {
     const actor = this.currentUserService.get()
-    this.ensureManager(actor.role)
-    this.ensureRoleAllowed(actor.role, dto.role)
+    if (actor.role !== Role.Admin) {
+      throw new ForbiddenException('Insufficient permissions')
+    }
 
     await this.ensureEmailAvailable(dto.email)
 
@@ -73,18 +71,16 @@ export class UserService {
     return this.userRepository.save(user)
   }
 
-  async updateUser(id: number, dto: UpdateUserDto): Promise<User> {
+  async updateUser(id: string, dto: UpdateUserDto): Promise<User> {
     const actor = this.currentUserService.get()
-    this.ensureManager(actor.role)
+    if (actor.role !== Role.Admin) {
+      throw new ForbiddenException('Insufficient permissions')
+    }
     const user = await this.userRepository.findOne({ where: { id } })
 
     if (!user) {
       throw new NotFoundException('User not found')
     }
-
-    const targetRole = dto.role ?? user.role
-    this.ensureRoleAllowed(actor.role, targetRole)
-    this.ensureCanManage(actor.role, user.role)
 
     if (dto.email && dto.email !== user.email) {
       await this.ensureEmailAvailable(dto.email)
@@ -94,45 +90,23 @@ export class UserService {
     return this.userRepository.save(updated)
   }
 
-  async deleteUser(id: number): Promise<void> {
+  async deleteUser(id: string): Promise<void> {
     const actor = this.currentUserService.get()
-    this.ensureManager(actor.role)
+    if (actor.role !== Role.Admin) {
+      throw new ForbiddenException('Insufficient permissions')
+    }
+
+    if (actor.id === id) {
+      throw new BadRequestException('Cannot delete yourself')
+    }
+
     const user = await this.userRepository.findOne({ where: { id } })
 
     if (!user) {
       throw new NotFoundException('User not found')
     }
 
-    this.ensureCanManage(actor.role, user.role)
     await this.userRepository.delete(id)
-  }
-
-  private ensureManager(role: Role | undefined) {
-    if (!role || (role !== Role.SuperAdmin && role !== Role.Admin)) {
-      throw new ForbiddenException('Only admin users can manage accounts')
-    }
-  }
-
-  private ensureRoleAllowed(actorRole: Role, targetRole: Role) {
-    if (targetRole === Role.SuperAdmin) {
-      throw new BadRequestException('Creating or updating super admin users is not allowed')
-    }
-
-    if (actorRole === Role.Admin && targetRole !== Role.Worker) {
-      throw new ForbiddenException('Admins can only manage worker users')
-    }
-  }
-
-  private ensureCanManage(actorRole: Role, targetRole: Role) {
-    if (actorRole === Role.SuperAdmin) {
-      return
-    }
-
-    if (actorRole === Role.Admin && targetRole === Role.Worker) {
-      return
-    }
-
-    throw new ForbiddenException('Insufficient permissions to manage this user')
   }
 
   private async ensureEmailAvailable(email: string) {
