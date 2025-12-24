@@ -2,6 +2,11 @@
 
 This document outlines the coding standards and best practices to be followed when contributing to this project. The goal is to maintain a clean, consistent, and readable codebase.
 
+## Project Planning & Tracking
+
+*   **Development Plan:** The original requirements and implementation plan are stored in [DEVELOP_PLAN_AI.md](./DEVELOP_PLAN_AI.md). This file serves as the source of truth for the project's scope and architectural decisions.
+*   **Progress Tracking:** The current status of the project, including completed phases and pending items, is tracked in [PLAN_FOLLOW_UP.md](./PLAN_FOLLOW_UP.md). Refer to this file to see what has been implemented and what remains.
+
 ## 1. General Principles
 
 *   **Concise Code:** Write code that is easy to understand and to the point. Avoid unnecessary verbosity.

@@ -17,6 +17,10 @@ pids
 .env
 .env.local
 .env.*.local
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
 
 # Directory for compiled output
 dist/
