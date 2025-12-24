@@ -1,9 +1,10 @@
-import { Body, ClassSerializerInterceptor, Controller, Get, Put, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, ClassSerializerInterceptor, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { plainToInstance } from 'class-transformer';
 import { TimeEntriesService } from './time-entries.service';
 import { TimesheetViewDto } from './dto/timesheet-view.dto';
 import { UpdateTimesheetCellDto } from './dto/update-timesheet-cell.dto';
+import { PinTaskDto } from './dto/pin-task.dto';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../user/entities/user.entity';
 
@@ -28,5 +29,21 @@ export class TimesheetController {
     @Body() dto: UpdateTimesheetCellDto
   ): Promise<void> {
     await this.timeEntriesService.updateTimesheetCell(user.id, dto);
+  }
+
+  @Post('tasks')
+  async pinTask(
+    @GetUser() user: User,
+    @Body() dto: PinTaskDto
+  ): Promise<void> {
+    await this.timeEntriesService.pinTask(user.id, dto.taskId);
+  }
+
+  @Delete('tasks/:taskId')
+  async unpinTask(
+    @GetUser() user: User,
+    @Param('taskId', ParseUUIDPipe) taskId: string
+  ): Promise<void> {
+    await this.timeEntriesService.unpinTask(user.id, taskId);
   }
 }

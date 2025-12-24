@@ -3,9 +3,9 @@
 This document tracks the implementation progress of the Timekeeping App against the original development plan defined in [DEVELOP_PLAN_AI.md](./DEVELOP_PLAN_AI.md).
 
 ## Summary
-- **Backend:** 100% Complete (Core modules, E2E Tests, Seed, Reporting).
+- **Backend:** 100% Complete (Core modules, E2E Tests, Seed, Reporting, Pinned Tasks).
 - **Admin App:** 100% Complete (Projects, Users, Reports, Tasks, Assignments).
-- **Worker App:** 100% Complete (Weekly Timesheet Grid, Login).
+- **Worker App:** 100% Complete (Weekly Timesheet Grid, Add/Remove Rows).
 - **Infrastructure:** 100% Complete (Docker, Monorepo setup).
 
 ## Detailed Checklist
@@ -43,6 +43,8 @@ This document tracks the implementation progress of the Timekeeping App against 
 - [x] Backend: Cell update logic (upsert/delete)
 - [x] User UI: Weekly Grid Component
 - [x] User UI: Date Navigation & Totals
+- [x] **Refinement**: User can explicitly "Add Task" to view (Pinned Tasks).
+- [x] **Refinement**: User can remove tasks (only if 0 hours).
 
 ### Phase 6 — Reporting & Export (Admin)
 - [x] Backend: Report Endpoint with Filters
