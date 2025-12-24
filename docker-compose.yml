@@ -1,0 +1,45 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: timesheet_backend/Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - JWT_SECRET=super-secret-docker-key
+      - DB_DATABASE=/app/data/timesheet.sqlite
+      - DB_SYNCHRONIZE=true
+    networks:
+      - timesheet-net
+
+  admin:
+    build:
+      context: .
+      dockerfile: admin_app/Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:3000
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - timesheet-net
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker_app/Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:3000
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+    networks:
+      - timesheet-net
+
+networks:
+  timesheet-net:
+    driver: bridge

@@ -13,7 +13,7 @@ This project is a monorepo managed by **Turborepo**, consisting of:
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v20+)
+- Node.js (v22+)
 - npm (v10+)
 
 ### Setup

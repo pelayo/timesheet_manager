@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+.git
+.turbo
+.vite
+coverage
+coverage-e2e
+*.sqlite
+data/

@@ -3,6 +3,7 @@ import { LoginPage } from './features/auth/LoginPage';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { ProjectsList } from './features/projects/ProjectsList';
+import { ProjectDetail } from './features/projects/ProjectDetail';
 import { UsersList } from './features/users/UsersList';
 import { ReportsPage } from './features/reports/ReportsPage';
 
@@ -18,6 +19,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/users" element={<UsersList />} />
           <Route path="/projects" element={<ProjectsList />} />
+          <Route path="/projects/:projectId" element={<ProjectDetail />} />
           <Route path="/reports" element={<ReportsPage />} />
         </Route>
       </Route>

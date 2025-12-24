@@ -8,6 +8,8 @@ import {
 import { useForm } from 'react-hook-form';
 import { api } from '../../api/axios';
 
+import { useNavigate } from 'react-router-dom';
+
 interface Project {
   id: string;
   name: string;
@@ -17,6 +19,7 @@ interface Project {
 }
 
 export const ProjectsList = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -100,6 +103,7 @@ export const ProjectsList = () => {
                 <TableCell>{project.code}</TableCell>
                 <TableCell>{project.isArchived ? 'Archived' : 'Active'}</TableCell>
                 <TableCell align="right">
+                  <Button onClick={() => navigate(`/projects/${project.id}`)} sx={{ mr: 1 }}>Manage</Button>
                   <Button onClick={() => handleOpen(project)}>Edit</Button>
                 </TableCell>
               </TableRow>
