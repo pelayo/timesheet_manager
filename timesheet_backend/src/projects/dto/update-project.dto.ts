@@ -16,4 +16,8 @@ export class UpdateProjectDto {
   @IsBoolean()
   @IsOptional()
   isArchived?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isGlobal?: boolean;
 }

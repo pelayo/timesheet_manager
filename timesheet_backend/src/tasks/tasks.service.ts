@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Task, TaskStatus } from './entities/task.entity';
+import { Project } from '../projects/entities/project.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { ProjectMember } from '../project-members/entities/project-member.entity';
@@ -11,6 +12,8 @@ export class TasksService {
   constructor(
     @InjectRepository(Task)
     private readonly taskRepository: Repository<Task>,
+    @InjectRepository(Project)
+    private readonly projectRepository: Repository<Project>,
     @InjectRepository(ProjectMember)
     private readonly memberRepository: Repository<ProjectMember>,
   ) {}
@@ -62,7 +65,10 @@ export class TasksService {
   async findForUser(userId: string, projectId: string): Promise<Task[]> {
     const membership = await this.memberRepository.findOne({ where: { userId, projectId } });
     if (!membership) {
-       throw new ForbiddenException('Not a member of this project');
+       const project = await this.projectRepository.findOne({ where: { id: projectId } });
+       if (!project || !project.isGlobal) {
+           throw new ForbiddenException('Not a member of this project');
+       }
     }
     
     return this.taskRepository.find({ where: { projectId }, order: { createdAt: 'DESC' } });

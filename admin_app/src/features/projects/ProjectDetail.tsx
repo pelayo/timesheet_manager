@@ -15,6 +15,7 @@ interface Project {
   code: string;
   description: string;
   isArchived: boolean;
+  isGlobal: boolean;
 }
 
 export const ProjectDetail = () => {
@@ -44,9 +45,14 @@ export const ProjectDetail = () => {
           {project.name} <Typography component="span" color="textSecondary">({project.code})</Typography>
         </Typography>
         <Typography variant="body1" paragraph>{project.description}</Typography>
-        <Typography variant="caption" display="block">
-          Status: {project.isArchived ? 'Archived' : 'Active'}
-        </Typography>
+        <Box display="flex" gap={2}>
+          <Typography variant="caption" display="block">
+            Status: {project.isArchived ? 'Archived' : 'Active'}
+          </Typography>
+          <Typography variant="caption" display="block">
+            Type: {project.isGlobal ? 'Global' : 'Assigned'}
+          </Typography>
+        </Box>
       </Paper>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>

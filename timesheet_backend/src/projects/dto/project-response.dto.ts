@@ -17,6 +17,9 @@ export class ProjectResponseDto {
   isArchived: boolean;
 
   @Expose()
+  isGlobal: boolean;
+
+  @Expose()
   createdAt: Date;
 
   @Expose()

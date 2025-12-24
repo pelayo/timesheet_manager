@@ -4,6 +4,7 @@ import { Repository, In } from 'typeorm';
 import { TimeEntry } from './entities/time-entry.entity';
 import { UserPinnedTask } from './entities/user-pinned-task.entity';
 import { Task, TaskStatus } from '../tasks/entities/task.entity';
+import { Project } from '../projects/entities/project.entity';
 import { ProjectMember } from '../project-members/entities/project-member.entity';
 import { CreateTimeEntryDto } from './dto/create-time-entry.dto';
 import { UpdateTimeEntryDto } from './dto/update-time-entry.dto';
@@ -19,6 +20,8 @@ export class TimeEntriesService {
     private readonly pinnedTaskRepository: Repository<UserPinnedTask>,
     @InjectRepository(Task)
     private readonly taskRepository: Repository<Task>,
+    @InjectRepository(Project)
+    private readonly projectRepository: Repository<Project>,
     @InjectRepository(ProjectMember)
     private readonly memberRepository: Repository<ProjectMember>,
   ) {}
@@ -33,12 +36,7 @@ export class TimeEntriesService {
       throw new BadRequestException('Cannot log time to a closed task');
     }
 
-    const member = await this.memberRepository.findOne({
-      where: { userId, projectId: task.projectId },
-    });
-    if (!member) {
-      throw new ForbiddenException('You are not a member of this project');
-    }
+    await this.ensureAccess(userId, task.projectId);
 
     const existing = await this.timeEntryRepository.findOne({
         where: { userId, taskId: dto.taskId, workDate: dto.workDate }
@@ -53,11 +51,21 @@ export class TimeEntriesService {
     });
     
     // Auto-pin task when logging time if not already pinned? 
-    // Requirement says "worker must be able to choose... and add it". 
-    // Usually if I log time, I want it to stay. Let's auto-pin for convenience.
     await this.pinTask(userId, dto.taskId);
 
     return this.timeEntryRepository.save(entry);
+  }
+
+  private async ensureAccess(userId: string, projectId: string) {
+    const member = await this.memberRepository.findOne({
+      where: { userId, projectId },
+    });
+    if (!member) {
+       const project = await this.projectRepository.findOne({ where: { id: projectId } });
+       if (!project || !project.isGlobal) {
+           throw new ForbiddenException('You are not a member of this project');
+       }
+    }
   }
 
   async findAllForUser(userId: string, from?: string, to?: string, projectId?: string): Promise<TimeEntry[]> {
@@ -280,24 +288,13 @@ export class TimeEntriesService {
           const task = await this.taskRepository.findOne({ where: { id: taskId } });
           if (!task) throw new NotFoundException('Task not found');
           
+          await this.ensureAccess(userId, task.projectId);
+          
           await this.pinnedTaskRepository.save(this.pinnedTaskRepository.create({ userId, taskId }));
       }
   }
 
   async unpinTask(userId: string, taskId: string): Promise<void> {
-      const entry = await this.timeEntryRepository.findOne({ where: { userId, taskId } });
-      // Logic check: "User cannot remove the line of a task with assigned hours"
-      // Actually, checking *all* history or just this week? 
-      // The requirement says "if a task has hours already the current viewing week, it must show".
-      // But unpinning implies "I don't want to see this anymore".
-      // If we unpin, `getWeeklyTimesheet` will still return it IF it has entries for that week.
-      // So unpinning is safe even if hours exist; the view logic handles showing it if entries exist.
-      // However, the requirement says "He must set the hours to 0 to let that happen."
-      // This implies the UI button should be disabled if hours > 0.
-      // Backend can enforce it too for safety, but unpinning itself doesn't delete data.
-      // If I unpin, and I have hours, it stays in the grid because of step 1 in getWeeklyTimesheet.
-      // So the requirement is naturally satisfied by the view logic.
-      
       await this.pinnedTaskRepository.delete({ userId, taskId });
   }
 }

@@ -16,6 +16,7 @@ interface Project {
   code: string;
   description: string;
   isArchived: boolean;
+  isGlobal: boolean;
 }
 
 export const ProjectsList = () => {
@@ -56,6 +57,7 @@ export const ProjectsList = () => {
       setValue('code', project.code);
       setValue('description', project.description);
       setValue('isArchived', project.isArchived);
+      setValue('isGlobal', project.isGlobal);
     } else {
       setEditingProject(null);
       reset();
@@ -93,6 +95,7 @@ export const ProjectsList = () => {
               <TableCell>Name</TableCell>
               <TableCell>Code</TableCell>
               <TableCell>Status</TableCell>
+              <TableCell>Type</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -102,6 +105,7 @@ export const ProjectsList = () => {
                 <TableCell>{project.name}</TableCell>
                 <TableCell>{project.code}</TableCell>
                 <TableCell>{project.isArchived ? 'Archived' : 'Active'}</TableCell>
+                <TableCell>{project.isGlobal ? 'Global' : 'Assigned'}</TableCell>
                 <TableCell align="right">
                   <Button onClick={() => navigate(`/projects/${project.id}`)} sx={{ mr: 1 }}>Manage</Button>
                   <Button onClick={() => handleOpen(project)}>Edit</Button>
@@ -136,6 +140,10 @@ export const ProjectsList = () => {
               multiline
               rows={3}
               {...register('description')}
+            />
+            <FormControlLabel
+              control={<Checkbox defaultChecked={editingProject ? editingProject.isGlobal : false} {...register('isGlobal')} />}
+              label="Global (Available to everyone)"
             />
             {editingProject && (
               <FormControlLabel

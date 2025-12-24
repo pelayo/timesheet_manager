@@ -17,6 +17,9 @@ export class Project {
   @Column({ default: false, name: 'is_archived' })
   isArchived: boolean;
 
+  @Column({ default: false, name: 'is_global' })
+  isGlobal: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

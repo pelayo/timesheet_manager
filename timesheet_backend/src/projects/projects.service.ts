@@ -46,11 +46,18 @@ export class ProjectsService {
   }
 
   async findForUser(userId: string): Promise<Project[]> {
+    const globalProjects = await this.projectRepository.find({ where: { isGlobal: true, isArchived: false } });
+
     const members = await this.memberRepository.find({
       where: { userId },
       relations: ['project'],
     });
     
-    return members.map(m => m.project);
+    const assignedProjects = members.map(m => m.project).filter(p => !p.isArchived);
+    
+    const all = [...globalProjects, ...assignedProjects];
+    const unique = Array.from(new Map(all.map(p => [p.id, p])).values());
+    
+    return unique.sort((a, b) => a.name.localeCompare(b.name));
   }
 }

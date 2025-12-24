@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { TimeEntry } from './entities/time-entry.entity';
 import { UserPinnedTask } from './entities/user-pinned-task.entity';
 import { Task } from '../tasks/entities/task.entity';
+import { Project } from '../projects/entities/project.entity';
 import { ProjectMember } from '../project-members/entities/project-member.entity';
 import { TimeEntriesService } from './time-entries.service';
 import { UserTimeEntriesController } from './user-time-entries.controller';
@@ -10,7 +11,7 @@ import { AdminTimeEntriesController } from './admin-time-entries.controller';
 import { TimesheetController } from './timesheet.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TimeEntry, UserPinnedTask, Task, ProjectMember])],
+  imports: [TypeOrmModule.forFeature([TimeEntry, UserPinnedTask, Task, Project, ProjectMember])],
   controllers: [UserTimeEntriesController, AdminTimeEntriesController, TimesheetController],
   providers: [TimeEntriesService],
   exports: [TimeEntriesService],
