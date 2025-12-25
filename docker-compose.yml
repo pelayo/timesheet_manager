@@ -20,6 +20,7 @@ services:
     build:
       context: .
       dockerfile: timesheet_backend/Dockerfile
+      target: dev
     # Use development command for watch mode
     command: npm run dev -w timesheet_backend
     ports:

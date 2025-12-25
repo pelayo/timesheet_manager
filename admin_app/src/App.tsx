@@ -6,6 +6,7 @@ import { ProjectsList } from './features/projects/ProjectsList';
 import { ProjectDetail } from './features/projects/ProjectDetail';
 import { UsersList } from './features/users/UsersList';
 import { ReportsPage } from './features/reports/ReportsPage';
+import { TimeEntriesPage } from './features/time-entries/TimeEntriesPage';
 
 const Dashboard = () => <h2>Welcome to Admin Dashboard</h2>;
 
@@ -20,6 +21,7 @@ function App() {
           <Route path="/users" element={<UsersList />} />
           <Route path="/projects" element={<ProjectsList />} />
           <Route path="/projects/:projectId" element={<ProjectDetail />} />
+          <Route path="/time-entries" element={<TimeEntriesPage />} />
           <Route path="/reports" element={<ReportsPage />} />
         </Route>
       </Route>

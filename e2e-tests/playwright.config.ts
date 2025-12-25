@@ -17,7 +17,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:8080',
       },
-      testMatch: 'admin.spec.ts',
+      testMatch: ['admin.spec.ts', 'time-entries-admin.spec.ts'],
     },
     {
       name: 'worker',

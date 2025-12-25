@@ -88,7 +88,14 @@ export class TimeEntriesService {
     return query.getMany();
   }
 
-  async findAll(from?: string, to?: string, userId?: string, projectId?: string): Promise<TimeEntry[]> {
+  async findAll(
+    from?: string, 
+    to?: string, 
+    userId?: string, 
+    projectId?: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ data: TimeEntry[]; total: number }> {
     const query = this.timeEntryRepository.createQueryBuilder('entry')
       .leftJoinAndSelect('entry.task', 'task')
       .leftJoinAndSelect('entry.user', 'user')
@@ -107,8 +114,15 @@ export class TimeEntriesService {
       query.andWhere('task.projectId = :projectId', { projectId });
     }
 
-    query.orderBy('entry.workDate', 'DESC');
-    return query.getMany();
+    query.orderBy('entry.workDate', 'DESC')
+         .addOrderBy('entry.createdAt', 'DESC');
+
+    const [data, total] = await query
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return { data, total };
   }
 
   async findOne(id: string): Promise<TimeEntry> {

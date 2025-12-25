@@ -1,5 +1,6 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { TaskStatus } from '../entities/task.entity';
+import { ProjectResponseDto } from '../../projects/dto/project-response.dto';
 
 export class TaskResponseDto {
   @Expose()
@@ -7,6 +8,10 @@ export class TaskResponseDto {
 
   @Expose()
   projectId: string;
+
+  @Expose()
+  @Type(() => ProjectResponseDto)
+  project: ProjectResponseDto;
 
   @Expose()
   name: string;

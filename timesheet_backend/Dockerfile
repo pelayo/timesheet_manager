@@ -24,6 +24,14 @@ COPY --from=builder /app/timesheet_backend/src ./src
 COPY --from=builder /app/timesheet_backend/package.json ./
 COPY --from=builder /app/timesheet_backend/tsconfig.json ./
 
+# Development stage
+FROM node:22-slim AS dev
+WORKDIR /app
+# Install procps for NestJS watch mode
+RUN apt-get update && apt-get install -y procps
+COPY --from=builder /app /app
+CMD ["npm", "run", "dev", "-w", "timesheet_backend"]
+
 # Set environment
 ENV NODE_ENV=production
 ENV DB_TYPE=sqlite

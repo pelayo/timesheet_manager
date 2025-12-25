@@ -1,8 +1,9 @@
-import { ClassSerializerInterceptor, Controller, Get, Param, ParseUUIDPipe, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { ClassSerializerInterceptor, Controller, Get, Param, ParseIntPipe, ParseUUIDPipe, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { plainToInstance } from 'class-transformer';
 import { TimeEntriesService } from './time-entries.service';
 import { TimeEntryResponseDto } from './dto/time-entry-response.dto';
+import { TimeEntryListResponseDto } from './dto/time-entry-list-response.dto';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../user/entities/role.enum';
@@ -19,10 +20,18 @@ export class AdminTimeEntriesController {
     @Query('from') from?: string,
     @Query('to') to?: string,
     @Query('userId') userId?: string,
-    @Query('projectId') projectId?: string
-  ): Promise<TimeEntryResponseDto[]> {
-    const entries = await this.timeEntriesService.findAll(from, to, userId, projectId);
-    return entries.map(e => plainToInstance(TimeEntryResponseDto, e, { excludeExtraneousValues: true }));
+    @Query('projectId') projectId?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20
+  ): Promise<TimeEntryListResponseDto> {
+    const { data, total } = await this.timeEntriesService.findAll(from, to, userId, projectId, page, limit);
+    
+    return plainToInstance(TimeEntryListResponseDto, {
+        data,
+        total,
+        page,
+        limit
+    }, { excludeExtraneousValues: true });
   }
 
   @Get(':id')
