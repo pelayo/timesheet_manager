@@ -1,8 +1,9 @@
-import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Res, UseGuards } from '@nestjs/common';
 import * as express from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ReportingService } from './reporting.service';
 import { ReportFilterDto } from './dto/report-filter.dto';
+import { StatsFilterDto } from './dto/stats-filter.dto';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../user/entities/role.enum';
@@ -12,6 +13,11 @@ import { Role } from '../user/entities/role.enum';
 @Roles(Role.Admin)
 export class ReportingController {
   constructor(private readonly reportingService: ReportingService) {}
+
+  @Get('stats')
+  async getStats(@Query() filter: StatsFilterDto) {
+    return this.reportingService.getStats(filter);
+  }
 
   @Get('time-entries')
   async getReport(@Query() filter: ReportFilterDto) {

@@ -3,8 +3,8 @@
 This document tracks the implementation progress of the Timekeeping App against the original development plan defined in [DEVELOP_PLAN_AI.md](./DEVELOP_PLAN_AI.md).
 
 ## Summary
-- **Backend:** 100% Complete (Core modules, E2E Tests, Seed, Reporting, Pinned Tasks).
-- **Admin App:** 100% Complete (Projects, Users, Reports, Tasks, Assignments, Time Entries).
+- **Backend:** 100% Complete (Core modules, E2E Tests, Seed, Reporting, Pinned Tasks, Stats).
+- **Admin App:** 100% Complete (Projects, Users, Reports, Tasks, Assignments, Time Entries, Stats Graph).
 - **Worker App:** 100% Complete (Weekly Timesheet Grid, Add/Remove Rows).
 - **Infrastructure:** 100% Complete (Docker, Monorepo setup).
 - **Quality:** 100% Complete (Unit, E2E, Playwright tests passing).
@@ -52,7 +52,9 @@ This document tracks the implementation progress of the Timekeeping App against 
 ### Phase 6 — Reporting & Export (Admin)
 - [x] Backend: Report Endpoint with Filters
 - [x] Backend: CSV Export Endpoint
+- [x] Backend: Stats Endpoint (Advanced Grouping, Time Bucketing, Caching)
 - [x] Admin UI: Reports Page with Filters & Export Button
+- [x] **Refinement**: Admin UI Stats Page with Bar Chart and Series Grouping (Project/User).
 
 ### Phase 7 — Hardening & Quality
 - [x] Unit Tests (Service Layer) - All Passing

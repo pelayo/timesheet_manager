@@ -67,10 +67,21 @@ async function bootstrap() {
   console.log('Created Project:', projectB.name)
 
   // 3. Create Tasks
-  const taskA1 = await tasksService.create(projectA.id, { name: 'Design Phase', description: 'Initial design' })
-  const taskA2 = await tasksService.create(projectA.id, { name: 'Development', description: 'Coding' })
-  const taskB1 = await tasksService.create(projectB.id, { name: 'Research', description: 'Market research' })
-  console.log('Created Tasks')
+  const createOrGetTask = async (pid: string, name: string, desc: string) => {
+      const existing = await tasksService.findAll(pid);
+      const found = existing.find(t => t.name === name);
+      if (found) {
+          console.log(`Task exists: ${name}`);
+          return found;
+      }
+      const created = await tasksService.create(pid, { name, description: desc });
+      console.log(`Created Task: ${name}`);
+      return created;
+  };
+
+  const taskA1 = await createOrGetTask(projectA.id, 'Design Phase', 'Initial design');
+  const taskA2 = await createOrGetTask(projectA.id, 'Development', 'Coding');
+  const taskB1 = await createOrGetTask(projectB.id, 'Research', 'Market research');
 
   // 4. Assign Members
   // Assign Admin to Project A (as Lead)
@@ -118,7 +129,40 @@ async function bootstrap() {
           minutes: 240,
           notes: 'Worked on dev',
       })
-      console.log('Logged time for Worker')
+      console.log('Logged initial time for Worker')
+
+      // 6. Seed Bulk Time Entries (200 random entries over 6 months)
+      console.log('Seeding 200 random time entries...')
+      const tasks = [taskA1, taskA2, taskB1];
+      const now = new Date();
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(now.getMonth() - 6);
+
+      for (let i = 0; i < 200; i++) {
+          const randomTask = tasks[Math.floor(Math.random() * tasks.length)];
+          
+          // Random date between sixMonthsAgo and now
+          const randomDate = new Date(sixMonthsAgo.getTime() + Math.random() * (now.getTime() - sixMonthsAgo.getTime()));
+          const workDate = randomDate.toISOString().split('T')[0];
+          
+          // Random minutes (30 to 480, step 15)
+          const randomMinutes = (Math.floor(Math.random() * 30) + 2) * 15; 
+
+          try {
+              // We use create directly, hoping no collision on unique constraint (user, task, date).
+              // If collision, we catch and ignore.
+              await timeEntriesService.create(workerUser.id, {
+                  taskId: randomTask.id,
+                  workDate,
+                  minutes: randomMinutes,
+                  notes: `Random entry ${i}`,
+              });
+          } catch (e) {
+              // Ignore duplicates
+          }
+      }
+      console.log('Bulk seeding complete')
+
   } catch (e) {
       console.error('Failed to log time:', e.message)
   }

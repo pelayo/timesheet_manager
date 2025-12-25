@@ -16,32 +16,103 @@ import { TaskStatus } from '../tasks/entities/task.entity';
 const DOMAIN = process.env.TEAMWORK_DOMAIN; // e.g. "mycompany" (becomes mycompany.teamwork.com)
 const API_KEY = process.env.TEAMWORK_API_KEY;
 
-if (!DOMAIN || !API_KEY) {
-  console.error('Please provide TEAMWORK_DOMAIN and TEAMWORK_API_KEY env variables.');
-  process.exit(1);
+const MOCK_MODE = !DOMAIN || !API_KEY;
+
+if (MOCK_MODE) {
+  console.warn('⚠️  No credentials found. Running in MOCK MODE (Generating synthetic data).');
+} else {
+    console.log(`🚀 Starting REAL migration from https://${DOMAIN}.teamwork.com...`);
 }
 
-const baseURL = `https://${DOMAIN}.teamwork.com`;
-const auth = { username: API_KEY, password: '' }; // Basic Auth with API Key as username
+const baseURL = MOCK_MODE ? 'http://mock-teamwork' : `https://${DOMAIN}.teamwork.com`;
+const auth = MOCK_MODE ? undefined : { username: API_KEY, password: '' };
 
 // Helper: Sleep
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Axios instance with interceptor for 429
-const client = axios.create({
-  baseURL: `https://${DOMAIN}.teamwork.com`,
-  auth,
-});
+// Mock Data Generators
+const mockPeople = Array.from({ length: 10 }, (_, i) => ({
+    id: `p${i}`,
+    'email-address': `user${i}@example.com`,
+    administrator: i === 0,
+    'first-name': `User`,
+    'last-name': `${i}`
+}));
 
-client.interceptors.response.use(null, async (error) => {
-  if (error.response && error.response.status === 429) {
-    const retryAfter = parseInt(error.response.headers['retry-after'] || '10', 10);
-    console.warn(`⚠️ Rate limited. Waiting ${retryAfter}s...`);
-    await sleep(retryAfter * 1000 + 1000); // Wait + buffer
-    return client.request(error.config);
-  }
-  return Promise.reject(error);
-});
+const mockProjects = Array.from({ length: 5 }, (_, i) => ({
+    id: `proj${i}`,
+    name: `Project ${String.fromCharCode(65 + i)}`,
+    description: `Imported Project ${i}`
+}));
+
+const mockTasks = (projId: string) => Array.from({ length: 10 }, (_, i) => ({
+    id: `t${projId}_${i}`,
+    content: `Task ${i} for ${projId}`,
+    description: `Description ${i}`,
+    completed: i % 3 === 0
+}));
+
+// Generate Time Entries
+const mockTimeEntries = (page: number) => {
+    if (page > 5) return []; // 5 pages of 50 entries = 250 entries
+    return Array.from({ length: 50 }, (_, i) => {
+        const pIdx = Math.floor(Math.random() * 10);
+        const projIdx = Math.floor(Math.random() * 5);
+        const tIdx = Math.floor(Math.random() * 10);
+        
+        // Random date in last 6 months
+        const date = new Date();
+        date.setDate(date.getDate() - Math.floor(Math.random() * 180));
+        
+        return {
+            id: `te_${page}_${i}`,
+            'person-id': `p${pIdx}`,
+            'todo-item-id': `tproj${projIdx}_${tIdx}`,
+            hours: String(Math.floor(Math.random() * 8)),
+            minutes: String(Math.floor(Math.random() * 4) * 15),
+            date: date.toISOString(),
+            description: 'Mock work'
+        };
+    });
+};
+
+// Axios Client Wrapper
+const getClient = () => {
+    if (MOCK_MODE) {
+        return {
+            get: async (url: string) => {
+                await sleep(50); // Fast mock
+                if (url === '/people.json') return { data: { people: mockPeople } };
+                if (url === '/projects.json') return { data: { projects: mockProjects } };
+                if (url.match(/\/projects\/.*\/tasks.json/)) {
+                     const pid = url.split('/')[2];
+                     return { data: { 'todo-items': mockTasks(pid) } };
+                }
+                if (url.startsWith('/time_entries.json')) {
+                    const page = parseInt(url.split('page=')[1] || '1');
+                    return { data: { 'time-entries': mockTimeEntries(page) } };
+                }
+                return { data: {} };
+            },
+            interceptors: { response: { use: () => {} } }
+        };
+    }
+    
+    // Real Client
+    const client = axios.create({ baseURL, auth });
+    client.interceptors.response.use(null, async (error) => {
+        if (error.response && error.response.status === 429) {
+            const retryAfter = parseInt(error.response.headers['retry-after'] || '10', 10);
+            console.warn(`⚠️ Rate limited. Waiting ${retryAfter}s...`);
+            await sleep(retryAfter * 1000 + 1000); 
+            return client.request(error.config);
+        }
+        return Promise.reject(error);
+    });
+    return client;
+};
+
+const client = getClient();
 
 // ID Mappings (Teamwork ID -> Local UUID)
 const userMap = new Map<string, string>(); // TW Person ID -> Local User ID
@@ -96,7 +167,7 @@ async function bootstrap() {
       } else {
         console.log(`User exists: ${email}`);
       }
-      userMap.set(person.id, user.id);
+      userMap.set(String(person.id), user.id);
     }
   } catch (e) {
     console.error('Error fetching people:', e.message);
@@ -123,7 +194,7 @@ async function bootstrap() {
       } else {
         console.log(`Project exists: ${p.name}`);
       }
-      projectMap.set(p.id, project.id);
+      projectMap.set(String(p.id), project.id);
 
       // --- 3. Project Members (Assign mapped users) ---
       // We assume mostly everyone is a member or we fetch project people?
@@ -164,7 +235,7 @@ async function bootstrap() {
             await tasksService.close(task.id);
           }
         }
-        taskMap.set(t.id, task.id);
+        taskMap.set(String(t.id), task.id);
       }
     } catch (e) {
       console.error(`Error fetching tasks for project ${twProjectId}:`, e.message);
@@ -188,14 +259,20 @@ async function bootstrap() {
         break;
       }
 
+      if (entries.length > 0 && page === 1) {
+          console.log('Sample Time Entry:', JSON.stringify(entries[0], null, 2));
+      }
+
       for (const entry of entries) {
-        const localUserId = userMap.get(entry['person-id']);
-        const localTaskId = taskMap.get(entry['todo-item-id']);
+        // Teamwork IDs are often strings in JSON but might be numbers. Cast to string for Map lookup.
+        const personId = String(entry['person-id']);
+        const taskId = String(entry['todo-item-id']);
+
+        const localUserId = userMap.get(personId);
+        const localTaskId = taskMap.get(taskId);
         
-        // If task is not mapped (maybe deleted in TW or sub-task?), try to map to Project Generic Task?
-        // Or skip.
         if (!localUserId || !localTaskId) {
-            // console.warn(`Skipping entry: User ${entry['person-id']} or Task ${entry['todo-item-id']} not found locally.`);
+            // console.warn(`Skipping entry: User ${personId} (Found? ${!!localUserId}) or Task ${taskId} (Found? ${!!localTaskId}) not found locally.`);
             continue;
         }
 
