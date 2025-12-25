@@ -6,7 +6,14 @@ COPY . .
 
 RUN npm install
 
+# Development stage
+FROM node:22-slim AS dev
+WORKDIR /app
+COPY --from=builder /app /app
+CMD ["npm", "run", "dev", "-w", "admin_app"]
+
 # Build arg for API URL
+ARG VITE_API_URL=http://localhost:3000
 ARG VITE_API_URL=http://localhost:3000
 ENV VITE_API_URL=$VITE_API_URL
 

@@ -1,27 +1,70 @@
 services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=timesheet
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - timesheet-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: .
       dockerfile: timesheet_backend/Dockerfile
+    # Use development command for watch mode
+    command: npm run dev -w timesheet_backend
     ports:
       - "3000:3000"
-    volumes:
-      - ./data:/app/data
     environment:
       - JWT_SECRET=super-secret-docker-key
-      - DB_DATABASE=/app/data/timesheet.sqlite
+      - DB_TYPE=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=timesheet
       - DB_SYNCHRONIZE=true
+    env_file:
+      - ./envs/.teamwork.env
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/timesheet_backend/node_modules
+      - /app/admin_app/node_modules
+      - /app/worker_app/node_modules
     networks:
       - timesheet-net
+    depends_on:
+      db:
+        condition: service_healthy
 
   admin:
     build:
       context: .
       dockerfile: admin_app/Dockerfile
+      target: dev
       args:
         - VITE_API_URL=http://localhost:3000
+    command: npm run dev -w admin_app
     ports:
-      - "8080:80"
+      - "8080:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/timesheet_backend/node_modules
+      - /app/admin_app/node_modules
+      - /app/worker_app/node_modules
     depends_on:
       - backend
     networks:
@@ -31,10 +74,20 @@ services:
     build:
       context: .
       dockerfile: worker_app/Dockerfile
+      target: dev
       args:
         - VITE_API_URL=http://localhost:3000
+    command: npm run dev -w worker_app
     ports:
-      - "8081:80"
+      - "8081:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/timesheet_backend/node_modules
+      - /app/admin_app/node_modules
+      - /app/worker_app/node_modules
     depends_on:
       - backend
     networks:
@@ -43,3 +96,6 @@ services:
 networks:
   timesheet-net:
     driver: bridge
+
+volumes:
+  db_data:

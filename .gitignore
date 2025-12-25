@@ -14,9 +14,10 @@ pids
 *.pid
 *.seed
 *.info
-.env
+*.env
 .env.local
 .env.*.local
+!.env.dist
 *.sqlite
 *.sqlite-journal
 *.sqlite-shm

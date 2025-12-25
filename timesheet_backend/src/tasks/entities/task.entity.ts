@@ -27,7 +27,7 @@ export class Task {
   @Column({ type: 'text', default: TaskStatus.OPEN })
   status: TaskStatus;
 
-  @Column({ name: 'closed_at', nullable: true, type: 'datetime' })
+  @Column({ name: 'closed_at', nullable: true, type: 'timestamp' })
   closedAt: Date | null;
 
   @CreateDateColumn({ name: 'created_at' })
