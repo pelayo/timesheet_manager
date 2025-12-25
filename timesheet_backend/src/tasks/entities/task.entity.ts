@@ -27,7 +27,7 @@ export class Task {
   @Column({ type: 'text', default: TaskStatus.OPEN })
   status: TaskStatus;
 
-  @Column({ name: 'closed_at', nullable: true, type: 'timestamp' })
+  @Column({ name: 'closed_at', nullable: true, type: process.env.NODE_ENV === 'test' ? 'datetime' : 'timestamp' })
   closedAt: Date | null;
 
   @CreateDateColumn({ name: 'created_at' })

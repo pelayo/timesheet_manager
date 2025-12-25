@@ -6,6 +6,9 @@ import { Task, TaskStatus } from '../tasks/entities/task.entity';
 import { ProjectMember } from '../project-members/entities/project-member.entity';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 
+import { Project } from '../projects/entities/project.entity';
+import { UserPinnedTask } from './entities/user-pinned-task.entity';
+
 const mockTimeEntryRepo = {
   create: jest.fn(),
   save: jest.fn(),
@@ -15,9 +18,20 @@ const mockTimeEntryRepo = {
   createQueryBuilder: jest.fn(),
 };
 
+const mockPinnedTaskRepo = {
+  findOne: jest.fn(),
+  create: jest.fn(),
+  save: jest.fn(),
+  delete: jest.fn(),
+};
+
 const mockTaskRepo = {
   findOne: jest.fn(),
   createQueryBuilder: jest.fn(),
+};
+
+const mockProjectRepo = {
+  findOne: jest.fn(),
 };
 
 const mockMemberRepo = {
@@ -33,7 +47,9 @@ describe('TimeEntriesService', () => {
       providers: [
         TimeEntriesService,
         { provide: getRepositoryToken(TimeEntry), useValue: mockTimeEntryRepo },
+        { provide: getRepositoryToken(UserPinnedTask), useValue: mockPinnedTaskRepo },
         { provide: getRepositoryToken(Task), useValue: mockTaskRepo },
+        { provide: getRepositoryToken(Project), useValue: mockProjectRepo },
         { provide: getRepositoryToken(ProjectMember), useValue: mockMemberRepo },
       ],
     }).compile();

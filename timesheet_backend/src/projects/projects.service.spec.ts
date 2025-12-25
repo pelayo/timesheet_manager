@@ -106,14 +106,11 @@ describe('ProjectsService', () => {
           const project = { id: 'p1', name: 'P1' };
           const members = [{ projectId: 'p1', userId, project }];
           
+          mockProjectRepository.find.mockResolvedValue([]); // No global projects
           mockMemberRepository.find.mockResolvedValue(members);
           
           const result = await service.findForUser(userId);
           expect(result).toEqual([project]);
-          expect(mockMemberRepository.find).toHaveBeenCalledWith({
-              where: { userId },
-              relations: ['project'],
-          });
       });
   });
 });

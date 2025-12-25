@@ -6,10 +6,16 @@ import { Task, TaskStatus } from './entities/task.entity';
 import { ProjectMember } from '../project-members/entities/project-member.entity';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
+import { Project } from '../projects/entities/project.entity';
+
 const mockTaskRepository = {
   create: jest.fn(),
   save: jest.fn(),
   find: jest.fn(),
+  findOne: jest.fn(),
+};
+
+const mockProjectRepository = {
   findOne: jest.fn(),
 };
 
@@ -27,6 +33,10 @@ describe('TasksService', () => {
         {
           provide: getRepositoryToken(Task),
           useValue: mockTaskRepository,
+        },
+        {
+          provide: getRepositoryToken(Project),
+          useValue: mockProjectRepository,
         },
         {
           provide: getRepositoryToken(ProjectMember),

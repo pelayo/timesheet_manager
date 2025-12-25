@@ -11,6 +11,8 @@ import { Task, TaskStatus } from '../src/tasks/entities/task.entity';
 import { ProjectMember } from '../src/project-members/entities/project-member.entity';
 import { TimeEntry } from '../src/time-entries/entities/time-entry.entity';
 
+import { UserPinnedTask } from '../src/time-entries/entities/user-pinned-task.entity';
+
 describe('Time Entries (e2e)', () => {
   let app: INestApplication;
   let httpServer: any;
@@ -19,6 +21,7 @@ describe('Time Entries (e2e)', () => {
   let taskRepository: Repository<Task>;
   let memberRepository: Repository<ProjectMember>;
   let timeEntryRepository: Repository<TimeEntry>;
+  let pinnedTaskRepository: Repository<UserPinnedTask>;
 
   let user: User;
   let project: Project;
@@ -39,10 +42,12 @@ describe('Time Entries (e2e)', () => {
     taskRepository = app.get<Repository<Task>>(getRepositoryToken(Task));
     memberRepository = app.get<Repository<ProjectMember>>(getRepositoryToken(ProjectMember));
     timeEntryRepository = app.get<Repository<TimeEntry>>(getRepositoryToken(TimeEntry));
+    pinnedTaskRepository = app.get<Repository<UserPinnedTask>>(getRepositoryToken(UserPinnedTask));
   });
 
   beforeEach(async () => {
     await timeEntryRepository.clear();
+    await pinnedTaskRepository.clear();
     await taskRepository.clear();
     await memberRepository.clear();
     await projectRepository.clear();
