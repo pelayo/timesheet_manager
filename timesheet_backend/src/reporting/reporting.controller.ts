@@ -43,14 +43,4 @@ export class ReportingController {
   async getReport(@Query() filter: ReportFilterDto) {
     return this.reportingService.getReport(filter);
   }
-
-  @Get('time-entries/export')
-  async exportCsv(@Query() filter: ReportFilterDto, @Res() res: express.Response) {
-    const csv = await this.reportingService.exportCsv(filter);
-    res.set({
-      'Content-Type': 'text/csv',
-      'Content-Disposition': 'attachment; filename="time-entries.csv"',
-    });
-    res.send(csv);
-  }
 }

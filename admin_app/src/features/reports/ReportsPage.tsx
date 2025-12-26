@@ -1,47 +1,58 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { 
-  Box, Typography, TextField, Button, Paper, Table, TableHead, 
-  TableRow, TableCell, TableBody, MenuItem, TableContainer 
-} from '@mui/material';
+import { Box, Typography, TextField, Button, Paper, CircularProgress } from '@mui/material';
+import { eachDayOfInterval, format } from 'date-fns';
 import { api } from '../../api/axios';
 
 export const ReportsPage = () => {
   const [filters, setFilters] = useState({
     from: '',
     to: '',
-    groupBy: ''
   });
-
-  const { data: report } = useQuery({
-    queryKey: ['reports', filters],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (filters.from) params.append('from', filters.from);
-      if (filters.to) params.append('to', filters.to);
-      if (filters.groupBy) params.append('groupBy', filters.groupBy);
-      
-      const res = await api.get('/admin/reports/time-entries', { params });
-      return res.data;
-    }
-  });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleExport = async () => {
-    const params = new URLSearchParams();
-    if (filters.from) params.append('from', filters.from);
-    if (filters.to) params.append('to', filters.to);
+    if (!filters.from || !filters.to) {
+      alert('Please select a date range.');
+      return;
+    }
+
+    setIsLoading(true);
     
-    const res = await api.get('/admin/reports/time-entries/export', { 
-      params, 
-      responseType: 'blob' 
-    });
+    const start = new Date(filters.from);
+    const end = new Date(filters.to);
+    const dateRange = eachDayOfInterval({ start, end });
+
+    let allEntries: any[] = [];
+
+    for (const date of dateRange) {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const params = new URLSearchParams({ from: dateStr, to: dateStr });
+      try {
+        const res = await api.get('/admin/reports/time-entries', { params });
+        allEntries = allEntries.concat(res.data);
+      } catch (error) {
+        console.error(`Failed to fetch data for ${dateStr}`, error);
+      }
+    }
+
+    const header = 'date,userId,userEmail,projectId,projectName,taskId,taskName,minutes,hoursDecimal,notes\n';
+    const rows = allEntries.map(e => {
+        const hours = (e.minutes / 60).toFixed(2);
+        const notes = (e.notes || '').replace(/"/g, '""');
+        return `${e.workDate},${e.userId},${e.user.email},${e.task.projectId},${e.task.project.name},${e.taskId},${e.task.name},${e.minutes},${hours},"${notes}"`;
+    }).join('\n');
     
-    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const csvContent = header + rows;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'time-entries.csv');
+    link.setAttribute('download', `time-entries-${filters.from}-to-${filters.to}.csv`);
     document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
+    
+    setIsLoading(false);
   };
 
   return (
@@ -63,64 +74,20 @@ export const ReportsPage = () => {
           value={filters.to}
           onChange={(e) => setFilters({ ...filters, to: e.target.value })}
         />
-        <TextField
-          select
-          label="Group By"
-          value={filters.groupBy}
-          onChange={(e) => setFilters({ ...filters, groupBy: e.target.value })}
-          sx={{ minWidth: 120 }}
-        >
-          <MenuItem value="">None</MenuItem>
-          <MenuItem value="project">Project</MenuItem>
-          <MenuItem value="user">User</MenuItem>
-          <MenuItem value="day">Day</MenuItem>
-        </TextField>
         
-        <Button variant="contained" color="secondary" onClick={handleExport}>
-          Export CSV
+        <Button 
+          variant="contained" 
+          color="secondary" 
+          onClick={handleExport}
+          disabled={isLoading}
+        >
+          {isLoading ? <CircularProgress size={24} /> : 'Export CSV'}
         </Button>
       </Paper>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              {filters.groupBy ? (
-                <>
-                  <TableCell>Group</TableCell>
-                  <TableCell>Total Minutes</TableCell>
-                </>
-              ) : (
-                <>
-                  <TableCell>Date</TableCell>
-                  <TableCell>User</TableCell>
-                  <TableCell>Task</TableCell>
-                  <TableCell>Minutes</TableCell>
-                </>
-              )}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {report?.map((row: any, i: number) => (
-              <TableRow key={i}>
-                {filters.groupBy ? (
-                  <>
-                    <TableCell>{row.group}</TableCell>
-                    <TableCell>{row.totalMinutes}</TableCell>
-                  </>
-                ) : (
-                  <>
-                    <TableCell>{row.workDate}</TableCell>
-                    <TableCell>{row.user?.email}</TableCell>
-                    <TableCell>{row.task?.name}</TableCell>
-                    <TableCell>{row.minutes}</TableCell>
-                  </>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <Typography variant="body1">
+        Select a date range and click "Export CSV" to download a report of all time entries within that period.
+      </Typography>
     </Box>
   );
 };

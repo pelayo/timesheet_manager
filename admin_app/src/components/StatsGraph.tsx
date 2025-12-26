@@ -22,12 +22,13 @@ interface SeriesSelectorProps {
   series: string[];
   visibleSeries: string[];
   onToggle: (key: string) => void;
+  colors: string[];
 }
 
-const SeriesSelector = ({ series, visibleSeries, onToggle }: SeriesSelectorProps) => (
+const SeriesSelector = ({ series, visibleSeries, onToggle, colors }: SeriesSelectorProps) => (
   <Paper variant="outlined" sx={{ maxHeight: 300, overflowY: 'auto' }}>
     <List dense subheader={<ListSubheader>Series</ListSubheader>}>
-      {series.map((key: string) => (
+      {series.map((key: string, index: number) => (
         <ListItem key={key} dense>
           <FormControlLabel
             control={
@@ -37,7 +38,12 @@ const SeriesSelector = ({ series, visibleSeries, onToggle }: SeriesSelectorProps
                 size="small"
               />
             }
-            label={key}
+            label={
+              <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box sx={{ width: 12, height: 12, bgcolor: colors[index % colors.length], mr: 1 }} />
+                {key}
+              </Box>
+            }
           />
         </ListItem>
       ))}
@@ -48,10 +54,15 @@ const SeriesSelector = ({ series, visibleSeries, onToggle }: SeriesSelectorProps
 
 export const StatsGraph = ({ chartData, seriesKeys, title = 'Statistics', filters, onFilterChange }: StatsGraphProps) => {
   const [visibleSeries, setVisibleSeries] = useState<string[]>(seriesKeys);
+  const [localFilters, setLocalFilters] = useState(filters);
 
   useEffect(() => {
     setVisibleSeries(seriesKeys);
   }, [seriesKeys]);
+  
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
 
   const handleSeriesToggle = (key: string) => {
     if (visibleSeries.includes(key)) {
@@ -81,16 +92,18 @@ export const StatsGraph = ({ chartData, seriesKeys, title = 'Statistics', filter
                 type="date"
                 size="small"
                 InputLabelProps={{ shrink: true }}
-                value={filters.from}
-                onChange={(e) => onFilterChange({ ...filters, from: e.target.value })}
+                value={localFilters.from}
+                onChange={(e) => setLocalFilters({ ...localFilters, from: e.target.value })}
+                onBlur={() => onFilterChange(localFilters)}
             />
             <TextField
                 label="To"
                 type="date"
                 size="small"
                 InputLabelProps={{ shrink: true }}
-                value={filters.to}
-                onChange={(e) => onFilterChange({ ...filters, to: e.target.value })}
+                value={localFilters.to}
+                onChange={(e) => setLocalFilters({ ...localFilters, to: e.target.value })}
+                onBlur={() => onFilterChange(localFilters)}
             />
           </Box>
       </Box>
@@ -131,6 +144,7 @@ export const StatsGraph = ({ chartData, seriesKeys, title = 'Statistics', filter
               series={seriesKeys}
               visibleSeries={visibleSeries}
               onToggle={handleSeriesToggle}
+              colors={COLORS}
             />
         </Box>
       </Box>

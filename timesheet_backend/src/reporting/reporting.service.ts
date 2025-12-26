@@ -194,27 +194,6 @@ export class ReportingService {
     return query.getMany();
   }
 
-  async exportCsv(filter: ReportFilterDto): Promise<string> {
-    const query = this.timeEntryRepository.createQueryBuilder('entry')
-      .leftJoinAndSelect('entry.task', 'task')
-      .leftJoinAndSelect('entry.user', 'user')
-      .leftJoinAndSelect('task.project', 'project');
-
-    this.applyFilters(query, filter);
-    query.orderBy('entry.workDate', 'DESC');
-    
-    const entries = await query.getMany();
-    
-    const header = 'date,userId,userEmail,projectId,projectName,taskId,taskName,minutes,hoursDecimal,notes\n';
-    const rows = entries.map(e => {
-        const hours = (e.minutes / 60).toFixed(2);
-        const notes = (e.notes || '').replace(new RegExp('"', 'g'), '""');
-        return `${e.workDate},${e.userId},${e.user.email},${e.task.projectId},${e.task.project.name},${e.taskId},${e.task.name},${e.minutes},${hours},"${notes}"`;
-    }).join('\n');
-    
-    return header + rows;
-  }
-
   private applyFilters(query: any, filter: ReportFilterDto) {
     if (filter.from) {
       query.andWhere('entry.workDate >= :from', { from: filter.from });

@@ -165,4 +165,15 @@ Use:
 ## Recent Updates / Maintenance
 - **Build System Fixes:**
   - Resolved file permission issues in `dist` folders.
-  - Fixed TypeScript compilation error in `admin_app` (unused import in `StatsGraph.tsx`).
+  - Fixed various TypeScript compilation errors across the frontend and backend.
+- **Admin Lists UX:**
+  - Added pagination and text search to the Projects and Users list pages to improve usability with large datasets.
+- **Reporting Graphs:**
+  - Added a "Group By" toggle (Day, Week, Month) to the user and project statistics graphs.
+  - Padded graph data to ensure all dates within a selected range are displayed on the x-axis, preventing gaps.
+  - Changed date filter updates to trigger on "blur" to reduce unnecessary API calls.
+  - Replaced the interactive legend with a permanent checkbox list for toggling series visibility.
+  - Added color indicators next to each series checkbox for better visual association.
+- **Reports Page Refactor:**
+  - Removed the data table to simplify the UI and improve performance.
+  - Implemented a frontend-driven CSV export that fetches data day-by-day to prevent overloading the backend.
