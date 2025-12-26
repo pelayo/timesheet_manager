@@ -13,7 +13,6 @@ const TIME_GROUPS = ['day', 'week', 'month'];
 const SERIES_GROUPS = [
   { value: 'none', label: 'None (Total)' },
   { value: 'project', label: 'Project' },
-  { value: 'user', label: 'User' },
 ];
 
 export const StatsPage = () => {
@@ -79,7 +78,8 @@ export const StatsPage = () => {
     });
 
     const sortedData = Object.values(groupedData).sort((a, b) => a.name.localeCompare(b.name));
-    return { chartData: sortedData, seriesKeys: Array.from(keys) };
+    const keysArray = Array.from(keys);
+    return { chartData: sortedData, seriesKeys: keysArray };
   }, [stats, filters.groupSeriesBy]);
 
   const handleExport = () => {
@@ -270,7 +270,7 @@ export const StatsPage = () => {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" />
                             <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
-                            <Tooltip formatter={(value: number) => [value + ' h', 'Time']} />
+                            <Tooltip formatter={(value: any) => [value + ' h', 'Time']} />
                             {seriesKeys.map((key, index) => (
                                 <Bar 
                                     key={key} 

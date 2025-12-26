@@ -8,6 +8,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { api } from '../../api/axios';
 import { ProjectTasks } from './ProjectTasks';
 import { ProjectMembers } from './ProjectMembers';
+import { StatsGraph } from '../../components/StatsGraph';
 
 interface Project {
   id: string;
@@ -27,6 +28,15 @@ export const ProjectDetail = () => {
     queryKey: ['projects', projectId],
     queryFn: async () => {
       const res = await api.get<Project>(`/admin/projects/${projectId}`);
+      return res.data;
+    }
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ['project-stats', projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const res = await api.get<any[]>(`/admin/reports/project/${projectId}/stats`);
       return res.data;
     }
   });
@@ -54,6 +64,12 @@ export const ProjectDetail = () => {
           </Typography>
         </Box>
       </Paper>
+      
+      {stats && (
+          <Paper sx={{ mb: 3 }}>
+              <StatsGraph data={stats} title="Project Activity (Daily)" />
+          </Paper>
+      )}
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>

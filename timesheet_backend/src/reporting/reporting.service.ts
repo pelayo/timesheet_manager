@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { TimeEntry } from '../time-entries/entities/time-entry.entity';
+import { DatalakeEntry } from '../datalake/entities/datalake-entry.entity';
 import { ReportFilterDto } from './dto/report-filter.dto';
 import { EntityGrouping, StatsFilterDto, TimeGrouping } from './dto/stats-filter.dto';
 
@@ -12,6 +13,8 @@ export class ReportingService {
   constructor(
     @InjectRepository(TimeEntry)
     private readonly timeEntryRepository: Repository<TimeEntry>,
+    @InjectRepository(DatalakeEntry)
+    private readonly datalakeRepository: Repository<DatalakeEntry>,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
@@ -22,24 +25,23 @@ export class ReportingService {
       return cached;
     }
 
-    const query = this.timeEntryRepository.createQueryBuilder('entry')
+    const query = this.datalakeRepository.createQueryBuilder('entry')
       .leftJoin('entry.task', 'task')
       .leftJoin('entry.user', 'user')
-      .leftJoin('task.project', 'project');
+      .leftJoin('entry.project', 'project');
 
     query.select([]); // Clear default entity selection for aggregation
 
     // Filters
-    if (filter.from) query.andWhere('entry.workDate >= :from', { from: filter.from });
-    if (filter.to) query.andWhere('entry.workDate <= :to', { to: filter.to });
+    if (filter.from) query.andWhere('entry.date >= :from', { from: filter.from });
+    if (filter.to) query.andWhere('entry.date <= :to', { to: filter.to });
     if (filter.userId) query.andWhere('entry.userId = :userId', { userId: filter.userId });
-    if (filter.projectId) query.andWhere('task.projectId = :projectId', { projectId: filter.projectId });
+    if (filter.projectId) query.andWhere('entry.projectId = :projectId', { projectId: filter.projectId });
     if (filter.taskId) query.andWhere('entry.taskId = :taskId', { taskId: filter.taskId });
 
     // Grouping
     const groups: string[] = [];
-    const isPostgres = process.env.DB_TYPE === 'postgres';
-
+    
     // Entity Grouping
     if (filter.groupBy?.includes(EntityGrouping.PROJECT)) {
       query.addSelect('project.name', 'projectName');
@@ -54,46 +56,92 @@ export class ReportingService {
       groups.push('user.email');
     }
 
-    // Time Grouping
+    // Time Grouping - Use pre-calculated columns
     if (filter.timeGrouping && filter.timeGrouping !== TimeGrouping.TOTAL) {
         let timeExpr = '';
-        if (isPostgres) {
-            switch (filter.timeGrouping) {
-                case TimeGrouping.DAY: timeExpr = `TO_CHAR(entry.work_date, 'YYYY-MM-DD')`; break;
-                case TimeGrouping.WEEK: timeExpr = `TO_CHAR(DATE_TRUNC('week', entry.work_date), 'YYYY-MM-DD')`; break;
-                case TimeGrouping.MONTH: timeExpr = `TO_CHAR(DATE_TRUNC('month', entry.work_date), 'YYYY-MM')`; break;
-            }
-        } else {
-            switch (filter.timeGrouping) {
-                case TimeGrouping.DAY: timeExpr = `strftime('%Y-%m-%d', entry.work_date)`; break;
-                case TimeGrouping.WEEK: timeExpr = `strftime('%Y-%W', entry.work_date)`; break;
-                case TimeGrouping.MONTH: timeExpr = `strftime('%Y-%m', entry.work_date)`; break;
-            }
+        switch (filter.timeGrouping) {
+            case TimeGrouping.DAY: timeExpr = 'entry.date'; break;
+            case TimeGrouping.WEEK: timeExpr = 'entry.week'; break;
+            case TimeGrouping.MONTH: timeExpr = 'entry.month'; break;
         }
-        query.addSelect(timeExpr, 'period');
-        groups.push(timeExpr);
+        
+        if (timeExpr) {
+             query.addSelect(timeExpr, 'period');
+             groups.push(timeExpr);
+        }
     }
 
     if (groups.length === 0) {
         query.addSelect("'Total'", 'label');
     }
 
-    // Ensure numeric totalMinutes
-    const sumExpr = isPostgres ? 'SUM(entry.minutes)::INT' : 'SUM(entry.minutes)';
-    query.addSelect(sumExpr, 'totalMinutes');
+    // Sum minutes
+    // Use simple SUM since datalake has numbers
+    query.addSelect('SUM(entry.minutes)', 'totalMinutes');
     
     if (groups.length > 0) {
         query.groupBy(groups.join(', '));
+        // Order by first group
         query.orderBy(groups[0], 'ASC'); 
     }
 
     const result = await query.getRawMany();
-    // console.log('Stats Result:', result);
+    // Parse totalMinutes to int
+    result.forEach(r => {
+        r.totalMinutes = parseInt(r.totalMinutes, 10);
+    });
     
     // Cache for 1 hour (3600000 ms) - only in production
     if (process.env.NODE_ENV === 'production') {
         await this.cacheManager.set(cacheKey, result, 3600000);
     }
+    return result;
+  }
+
+  async getProjectStats(projectId: string) {
+    const cacheKey = `project-stats:${projectId}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const result = await this.timeEntryRepository.createQueryBuilder('entry')
+      .leftJoin('entry.task', 'task')
+      .select('entry.workDate', 'date')
+      .addSelect('SUM(entry.minutes)', 'minutes')
+      .where('task.projectId = :projectId', { projectId })
+      .groupBy('entry.workDate')
+      .orderBy('entry.workDate', 'ASC') // Graph usually needs ASC
+      .getRawMany();
+      
+    // Parse minutes
+    result.forEach(r => r.minutes = parseInt(r.minutes, 10));
+
+    // Cache for 15 minutes (900000 ms)
+    await this.cacheManager.set(cacheKey, result, 900000);
+    return result;
+  }
+
+  async getWorkerStats(userId: string) {
+    const cacheKey = `worker-stats:${userId}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const result = await this.timeEntryRepository.createQueryBuilder('entry')
+      .select('entry.workDate', 'date')
+      .addSelect('SUM(entry.minutes)', 'minutes')
+      .where('entry.userId = :userId', { userId })
+      .groupBy('entry.workDate')
+      .orderBy('entry.workDate', 'ASC')
+      .getRawMany();
+
+    // Parse minutes
+    result.forEach(r => r.minutes = parseInt(r.minutes, 10));
+
+    // Cache for 15 minutes (900000 ms)
+    await this.cacheManager.set(cacheKey, result, 900000);
     return result;
   }
 

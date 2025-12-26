@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
 import * as express from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ReportingService } from './reporting.service';
@@ -17,6 +17,16 @@ export class ReportingController {
   @Get('stats')
   async getStats(@Query() filter: StatsFilterDto) {
     return this.reportingService.getStats(filter);
+  }
+
+  @Get('project/:projectId/stats')
+  async getProjectStats(@Param('projectId') projectId: string) {
+    return this.reportingService.getProjectStats(projectId);
+  }
+
+  @Get('worker/:userId/stats')
+  async getWorkerStats(@Param('userId') userId: string) {
+    return this.reportingService.getWorkerStats(userId);
   }
 
   @Get('time-entries')

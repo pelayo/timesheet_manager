@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { TimeEntry } from './entities/time-entry.entity';
 import { UserPinnedTask } from './entities/user-pinned-task.entity';
 import { Task, TaskStatus } from '../tasks/entities/task.entity';
@@ -24,6 +25,7 @@ export class TimeEntriesService {
     private readonly projectRepository: Repository<Project>,
     @InjectRepository(ProjectMember)
     private readonly memberRepository: Repository<ProjectMember>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(userId: string, dto: CreateTimeEntryDto): Promise<TimeEntry> {
@@ -53,7 +55,9 @@ export class TimeEntriesService {
     // Auto-pin task when logging time if not already pinned? 
     await this.pinTask(userId, dto.taskId);
 
-    return this.timeEntryRepository.save(entry);
+    const saved = await this.timeEntryRepository.save(entry);
+    this.eventEmitter.emit('time-entry.created', saved);
+    return saved;
   }
 
   private async ensureAccess(userId: string, projectId: string) {
@@ -149,7 +153,9 @@ export class TimeEntriesService {
     }
 
     const updated = Object.assign(entry, dto);
-    return this.timeEntryRepository.save(updated);
+    const saved = await this.timeEntryRepository.save(updated);
+    this.eventEmitter.emit('time-entry.updated', saved);
+    return saved;
   }
 
   async delete(id: string, userId: string): Promise<void> {
@@ -163,7 +169,9 @@ export class TimeEntriesService {
         throw new BadRequestException('Cannot delete time entry for a closed task');
     }
 
+    const entryClone = { ...entry };
     await this.timeEntryRepository.remove(entry);
+    this.eventEmitter.emit('time-entry.deleted', entryClone);
   }
 
   async getWeeklyTimesheet(userId: string, weekStart: string): Promise<TimesheetViewDto> {
@@ -273,7 +281,9 @@ export class TimeEntriesService {
              if (task && task.status === TaskStatus.CLOSED) {
                  throw new BadRequestException('Cannot remove time from closed task');
              }
+            const existingClone = { ...existing };
             await this.timeEntryRepository.remove(existing);
+            this.eventEmitter.emit('time-entry.deleted', existingClone);
         }
         return;
     }
@@ -284,7 +294,8 @@ export class TimeEntriesService {
             throw new BadRequestException('Cannot update closed task');
         }
         existing.minutes = minutes;
-        await this.timeEntryRepository.save(existing);
+        const saved = await this.timeEntryRepository.save(existing);
+        this.eventEmitter.emit('time-entry.updated', saved);
     } else {
         const createDto = {
             taskId,

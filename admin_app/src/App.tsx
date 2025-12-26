@@ -5,6 +5,7 @@ import { RequireAuth } from './components/RequireAuth';
 import { ProjectsList } from './features/projects/ProjectsList';
 import { ProjectDetail } from './features/projects/ProjectDetail';
 import { UsersList } from './features/users/UsersList';
+import { UserDetail } from './features/users/UserDetail';
 import { ReportsPage } from './features/reports/ReportsPage';
 import { TimeEntriesPage } from './features/time-entries/TimeEntriesPage';
 import { StatsPage } from './features/reports/StatsPage';
@@ -20,6 +21,7 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/users" element={<UsersList />} />
+          <Route path="/users/:userId" element={<UserDetail />} />
           <Route path="/projects" element={<ProjectsList />} />
           <Route path="/projects/:projectId" element={<ProjectDetail />} />
           <Route path="/time-entries" element={<TimeEntriesPage />} />

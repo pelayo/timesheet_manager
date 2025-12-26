@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { TimeEntriesService } from './time-entries.service';
 import { TimeEntry } from './entities/time-entry.entity';
 import { Task, TaskStatus } from '../tasks/entities/task.entity';
@@ -39,6 +40,10 @@ const mockMemberRepo = {
   find: jest.fn(),
 };
 
+const mockEventEmitter = {
+  emit: jest.fn(),
+};
+
 describe('TimeEntriesService', () => {
   let service: TimeEntriesService;
 
@@ -51,6 +56,7 @@ describe('TimeEntriesService', () => {
         { provide: getRepositoryToken(Task), useValue: mockTaskRepo },
         { provide: getRepositoryToken(Project), useValue: mockProjectRepo },
         { provide: getRepositoryToken(ProjectMember), useValue: mockMemberRepo },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
 

@@ -91,9 +91,12 @@ test.describe('Admin Stats', () => {
     await verifyPage.getByTestId('split-series-select').click();
     await verifyPage.getByRole('option', { name: 'Project' }).click();
     
+    // Give some time for Datalake to sync and query to refresh
+    await verifyPage.waitForTimeout(2000);
+
     // Verify Legend contains projects
-    await expect(verifyPage.getByText(p1Name)).toBeVisible();
-    await expect(verifyPage.getByText(p2Name)).toBeVisible();
+    await expect(verifyPage.getByText(p1Name)).toBeVisible({ timeout: 10000 });
+    await expect(verifyPage.getByText(p2Name)).toBeVisible({ timeout: 10000 });
 
     // Export Button Enabled
     await expect(verifyPage.getByText('Export CSV')).toBeEnabled();

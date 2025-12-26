@@ -87,6 +87,10 @@ test.describe('Admin Time Entries', () => {
 
     await verifyPage.click('text=Time Entries');
     
+    // Filter by Project A to avoid seeded data noise
+    await verifyPage.getByRole('combobox', { name: 'Project' }).click();
+    await verifyPage.getByRole('option', { name: p1Name }).click();
+
     // Check Entry Exists
     await expect(verifyPage.getByRole('cell', { name: p1Name }).first()).toBeVisible();
     await expect(verifyPage.getByRole('cell', { name: '120' }).first()).toBeVisible();
@@ -97,10 +101,5 @@ test.describe('Admin Time Entries', () => {
     await verifyPage.getByRole('option', { name: p2Name }).click();
     await expect(verifyPage.getByRole('cell', { name: p1Name })).not.toBeVisible();
     await expect(verifyPage.getByText('No entries found')).toBeVisible();
-
-    // Filter by Project A (Should appear again)
-    await verifyPage.getByRole('combobox', { name: 'Project' }).click();
-    await verifyPage.getByRole('option', { name: p1Name }).click();
-    await expect(verifyPage.getByRole('cell', { name: p1Name }).first()).toBeVisible();
   });
 });

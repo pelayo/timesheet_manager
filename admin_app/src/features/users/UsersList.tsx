@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
   Button, Box, Typography, Dialog, DialogTitle, DialogContent, TextField, 
@@ -78,7 +79,11 @@ export const UsersList = () => {
           <TableBody>
             {users?.map((user) => (
               <TableRow key={user.id}>
-                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  <Link to={`/users/${user.id}`} style={{ color: '#1976d2', textDecoration: 'none' }}>
+                    {user.email}
+                  </Link>
+                </TableCell>
                 <TableCell>{user.role}</TableCell>
                 <TableCell align="right">
                   <IconButton color="error" onClick={() => deleteMutation.mutate(user.id)}>
