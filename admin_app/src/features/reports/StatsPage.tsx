@@ -72,8 +72,10 @@ export const StatsPage = () => {
         }
 
         keys.add(key);
-        // Ensure numbers
-        groupedData[period][key] = (groupedData[period][key] || 0) + Number(item.totalMinutes || 0);
+        // Ensure numbers and convert to Hours
+        const minutes = Number(item.totalMinutes || 0);
+        const hours = Number((minutes / 60).toFixed(2));
+        groupedData[period][key] = (groupedData[period][key] || 0) + hours;
     });
 
     const sortedData = Object.values(groupedData).sort((a, b) => a.name.localeCompare(b.name));
@@ -111,6 +113,19 @@ export const StatsPage = () => {
     }
     setHiddenSeries(newHidden);
   };
+
+  const handleToggleAll = () => {
+      if (hiddenSeries.size === 0) {
+          // Hide all
+          setHiddenSeries(new Set(seriesKeys));
+      } else {
+          // Show all
+          setHiddenSeries(new Set());
+      }
+  };
+
+  const allVisible = hiddenSeries.size === 0;
+  const someHidden = hiddenSeries.size > 0 && hiddenSeries.size < seriesKeys.length;
 
   const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -186,6 +201,26 @@ export const StatsPage = () => {
                         </Typography>
                     </Box>
                     <List dense sx={{ overflowY: 'auto', flex: 1 }}>
+                        <ListItem disablePadding>
+                            <ListItemButton onClick={handleToggleAll} dense>
+                                <ListItemIcon sx={{ minWidth: 36 }}>
+                                    <Checkbox
+                                        edge="start"
+                                        checked={allVisible}
+                                        indeterminate={someHidden}
+                                        tabIndex={-1}
+                                        disableRipple
+                                        size="small"
+                                        sx={{ p: 0 }}
+                                    />
+                                </ListItemIcon>
+                                <ListItemText 
+                                    primary={allVisible ? "Hide All" : "Show All"} 
+                                    primaryTypographyProps={{ fontWeight: 'bold', variant: 'body2' }}
+                                />
+                            </ListItemButton>
+                        </ListItem>
+                        <Divider />
                         {seriesKeys.map((key, index) => {
                             const isHidden = hiddenSeries.has(key);
                             const color = colors[index % colors.length];
@@ -234,8 +269,8 @@ export const StatsPage = () => {
                         <BarChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" />
-                            <YAxis label={{ value: 'Minutes', angle: -90, position: 'insideLeft' }} />
-                            <Tooltip />
+                            <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
+                            <Tooltip formatter={(value: number) => [value + ' h', 'Time']} />
                             {seriesKeys.map((key, index) => (
                                 <Bar 
                                     key={key} 
