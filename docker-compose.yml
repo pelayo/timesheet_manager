@@ -8,6 +8,7 @@ services:
       - POSTGRES_DB=timesheet
     volumes:
       - db_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
     networks:
       - timesheet-net
     healthcheck:

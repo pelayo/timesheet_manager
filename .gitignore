@@ -22,6 +22,8 @@ pids
 *.sqlite-journal
 *.sqlite-shm
 *.sqlite-wal
+*.sql
+!postgres-init/*.sql
 
 # Directory for compiled output
 dist/

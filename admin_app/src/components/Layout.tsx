@@ -25,7 +25,7 @@ export const Layout = () => {
           <Button color="inherit" onClick={handleLogout}>Logout</Button>
         </Toolbar>
       </AppBar>
-      <Container sx={{ mt: 4 }}>
+      <Container maxWidth={false} sx={{ mt: 4, px: 4 }}>
         <Outlet />
       </Container>
     </Box>
