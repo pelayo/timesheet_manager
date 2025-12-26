@@ -182,7 +182,7 @@ async function bootstrap() {
 
     for (const p of projects) {
       const existing = await projectsService.findAll(p.name);
-      let project = existing.find((ep) => ep.name === p.name);
+      let project = existing.items.find((ep) => ep.name === p.name);
 
       if (!project) {
         project = await projectsService.create({

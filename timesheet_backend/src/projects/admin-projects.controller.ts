@@ -25,11 +25,16 @@ export class AdminProjectsController {
   @Get()
   async findAll(
     @Query('search') search?: string,
-    @Query('archived') archived?: string
-  ): Promise<ProjectResponseDto[]> {
+    @Query('archived') archived?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ): Promise<{ items: ProjectResponseDto[]; total: number }> {
     const isArchived = archived === 'true' ? true : archived === 'false' ? false : undefined;
-    const projects = await this.projectsService.findAll(search, isArchived);
-    return projects.map(p => plainToInstance(ProjectResponseDto, p, { excludeExtraneousValues: true }));
+    const { items, total } = await this.projectsService.findAll(search, isArchived, page, limit);
+    return {
+      items: items.map(p => plainToInstance(ProjectResponseDto, p, { excludeExtraneousValues: true })),
+      total,
+    };
   }
 
   @Get(':id')

@@ -7,7 +7,7 @@ import {
   Scope,
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Repository, Like } from 'typeorm'
 import { User } from './entities/user.entity'
 import { Role } from './entities/role.enum'
 import { CreateUserDto } from './dto/create-user.dto'
@@ -37,12 +37,23 @@ export class UserService {
     return this.userRepository.findOne({ where: { id } })
   }
 
-  async listManagedUsers(): Promise<User[]> {
+  async listManagedUsers(search?: string, page: number = 1, limit: number = 10): Promise<{ items: User[]; total: number }> {
     const actor = this.currentUserService.get()
     if (actor.role !== Role.Admin) {
       throw new ForbiddenException('Insufficient permissions')
     }
-    return this.userRepository.find()
+    const where: any = {};
+    if (search) {
+      where.email = Like(`%${search}%`);
+    }
+
+    const [items, total] = await this.userRepository.findAndCount({
+      where,
+      order: { email: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return { items, total };
   }
 
   async getManagedUser(id: string): Promise<User> {

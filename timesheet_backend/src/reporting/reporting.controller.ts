@@ -20,13 +20,23 @@ export class ReportingController {
   }
 
   @Get('project/:projectId/stats')
-  async getProjectStats(@Param('projectId') projectId: string) {
-    return this.reportingService.getProjectStats(projectId);
+  async getProjectStats(
+      @Param('projectId') projectId: string,
+      @Query('from') from?: string,
+      @Query('to') to?: string,
+      @Query('groupBy') groupBy?: string,
+  ) {
+    return this.reportingService.getProjectStats(projectId, from, to, groupBy);
   }
 
   @Get('worker/:userId/stats')
-  async getWorkerStats(@Param('userId') userId: string) {
-    return this.reportingService.getWorkerStats(userId);
+  async getWorkerStats(
+      @Param('userId') userId: string,
+      @Query('from') from?: string,
+      @Query('to') to?: string,
+      @Query('groupBy') groupBy?: string,
+  ) {
+    return this.reportingService.getWorkerStats(userId, from, to, groupBy);
   }
 
   @Get('time-entries')

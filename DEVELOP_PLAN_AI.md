@@ -161,3 +161,8 @@ Use:
 - Budgets and alerts per project.
 - Multi-tenant support.
 - Import/export projects/tasks (Native JSON format).
+
+## Recent Updates / Maintenance
+- **Build System Fixes:**
+  - Resolved file permission issues in `dist` folders.
+  - Fixed TypeScript compilation error in `admin_app` (unused import in `StatsGraph.tsx`).

@@ -98,20 +98,33 @@ export class ReportingService {
     return result;
   }
 
-  async getProjectStats(projectId: string) {
-    const cacheKey = `project-stats:${projectId}`;
+  async getProjectStats(projectId: string, from?: string, to?: string, groupBy: string = 'day') {
+    const cacheKey = `project-stats:${projectId}:${from || 'all'}:${to || 'all'}:${groupBy}`;
     const cached = await this.cacheManager.get(cacheKey);
     if (cached) {
       return cached;
     }
 
-    const result = await this.timeEntryRepository.createQueryBuilder('entry')
+    const dateGroup = groupBy === 'month' ? 'month' : groupBy === 'week' ? 'week' : 'day';
+    const query = this.timeEntryRepository.createQueryBuilder('entry')
       .leftJoin('entry.task', 'task')
-      .select('entry.workDate', 'date')
+      .leftJoin('entry.user', 'user')
+      .select(`DATE_TRUNC('${dateGroup}', entry.workDate)::DATE`, 'date')
+      .addSelect('user.email', 'userEmail')
       .addSelect('SUM(entry.minutes)', 'minutes')
-      .where('task.projectId = :projectId', { projectId })
-      .groupBy('entry.workDate')
-      .orderBy('entry.workDate', 'ASC') // Graph usually needs ASC
+      .where('task.projectId = :projectId', { projectId });
+
+    if (from) {
+        query.andWhere('entry.workDate >= :from', { from });
+    }
+    if (to) {
+        query.andWhere('entry.workDate <= :to', { to });
+    }
+
+    const result = await query
+      .groupBy('date')
+      .addGroupBy('user.email')
+      .orderBy('date', 'ASC')
       .getRawMany();
       
     // Parse minutes
@@ -122,19 +135,33 @@ export class ReportingService {
     return result;
   }
 
-  async getWorkerStats(userId: string) {
-    const cacheKey = `worker-stats:${userId}`;
+  async getWorkerStats(userId: string, from?: string, to?: string, groupBy: string = 'day') {
+    const cacheKey = `worker-stats:${userId}:${from || 'all'}:${to || 'all'}:${groupBy}`;
     const cached = await this.cacheManager.get(cacheKey);
     if (cached) {
       return cached;
     }
 
-    const result = await this.timeEntryRepository.createQueryBuilder('entry')
-      .select('entry.workDate', 'date')
+    const dateGroup = groupBy === 'month' ? 'month' : groupBy === 'week' ? 'week' : 'day';
+    const query = this.timeEntryRepository.createQueryBuilder('entry')
+      .leftJoin('entry.task', 'task')
+      .leftJoin('task.project', 'project')
+      .select(`DATE_TRUNC('${dateGroup}', entry.workDate)::DATE`, 'date')
+      .addSelect('project.name', 'projectName')
       .addSelect('SUM(entry.minutes)', 'minutes')
-      .where('entry.userId = :userId', { userId })
-      .groupBy('entry.workDate')
-      .orderBy('entry.workDate', 'ASC')
+      .where('entry.userId = :userId', { userId });
+
+    if (from) {
+        query.andWhere('entry.workDate >= :from', { from });
+    }
+    if (to) {
+        query.andWhere('entry.workDate <= :to', { to });
+    }
+
+    const result = await query
+      .groupBy('date')
+      .addGroupBy('project.name')
+      .orderBy('date', 'ASC')
       .getRawMany();
 
     // Parse minutes

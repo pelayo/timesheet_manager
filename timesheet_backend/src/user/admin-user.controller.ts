@@ -10,6 +10,7 @@ import {
   Post,
   UseGuards,
   UseInterceptors,
+  Query,
 } from '@nestjs/common'
 import { AuthGuard } from '@nestjs/passport'
 import { plainToInstance } from 'class-transformer'
@@ -29,11 +30,18 @@ export class AdminUserController {
 
   @Get()
   @Roles(Role.Admin)
-  async list(): Promise<UserResponseDto[]> {
-    const users = await this.userService.listManagedUsers()
-    return users.map((user) =>
-      plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true }),
-    )
+  async list(
+    @Query('search') search?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ): Promise<{ items: UserResponseDto[]; total: number }> {
+    const { items, total } = await this.userService.listManagedUsers(search, page, limit)
+    return {
+      items: items.map((user) =>
+        plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true }),
+      ),
+      total,
+    }
   }
 
   @Get(':id')

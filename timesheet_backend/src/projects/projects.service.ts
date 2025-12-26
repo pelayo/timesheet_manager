@@ -20,7 +20,7 @@ export class ProjectsService {
     return this.projectRepository.save(project);
   }
 
-  async findAll(search?: string, archived?: boolean): Promise<Project[]> {
+  async findAll(search?: string, archived?: boolean, page: number = 1, limit: number = 10): Promise<{ items: Project[]; total: number }> {
     const where: any = {};
     if (archived !== undefined) {
       where.isArchived = archived;
@@ -28,7 +28,13 @@ export class ProjectsService {
     if (search) {
       where.name = Like(`%${search}%`);
     }
-    return this.projectRepository.find({ where, order: { name: 'ASC' } });
+    const [items, total] = await this.projectRepository.findAndCount({
+      where,
+      order: { name: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return { items, total };
   }
 
   async findOne(id: string): Promise<Project> {
