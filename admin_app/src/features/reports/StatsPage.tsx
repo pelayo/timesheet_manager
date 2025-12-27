@@ -270,7 +270,7 @@ export const StatsPage = () => {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" />
                             <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
-                            <Tooltip formatter={(value: any) => [value + ' h', 'Time']} />
+                            <Tooltip formatter={(value: any, name: string) => [value + ' h', name]} />
                             {seriesKeys.map((key, index) => (
                                 <Bar 
                                     key={key} 

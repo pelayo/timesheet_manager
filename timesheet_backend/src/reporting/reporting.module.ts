@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ReportingController } from './reporting.controller';
+import { UserReportingController } from './user-reporting.controller';
 import { ReportingService } from './reporting.service';
 import { TimeEntry } from '../time-entries/entities/time-entry.entity';
 import { DatalakeModule } from '../datalake/datalake.module';
@@ -12,7 +13,7 @@ import { DatalakeModule } from '../datalake/datalake.module';
     CacheModule.register(),
     DatalakeModule,
   ],
-  controllers: [ReportingController],
+  controllers: [ReportingController, UserReportingController],
   providers: [ReportingService],
 })
 export class ReportingModule {}

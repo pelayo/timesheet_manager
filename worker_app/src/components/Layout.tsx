@@ -17,6 +17,7 @@ export const Layout = () => {
             Timesheet Worker
           </Typography>
           <Button color="inherit" onClick={() => navigate('/')}>My Timesheet</Button>
+          <Button color="inherit" onClick={() => navigate('/stats')}>Stats</Button>
           <Button color="inherit" onClick={handleLogout}>Logout</Button>
         </Toolbar>
       </AppBar>

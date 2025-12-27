@@ -13,6 +13,30 @@ import { startOfWeek, addWeeks, format, parseISO } from 'date-fns';
 import { useForm } from 'react-hook-form';
 import { api } from '../../api/axios';
 
+const minutesToHHMM = (minutes: number): string => {
+  if (minutes === 0) return '';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}:${m.toString().padStart(2, '0')}`;
+};
+
+const formatTotal = (minutes: number): string => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}:${m.toString().padStart(2, '0')}`;
+};
+
+const hhmmToMinutes = (str: string): number => {
+  if (!str) return 0;
+  if (str.includes(':')) {
+    const parts = str.split(':');
+    const h = parseInt(parts[0], 10) || 0;
+    const m = parseInt(parts[1], 10) || 0;
+    return h * 60 + m;
+  }
+  return parseInt(str, 10) || 0;
+};
+
 interface TimesheetRow {
   projectId: string;
   projectName: string;
@@ -107,7 +131,7 @@ export const WeeklyTimesheet = () => {
   const handleNextWeek = () => setCurrentDate(addWeeks(currentDate, 1));
 
   const handleCellChange = (taskId: string, date: string, value: string) => {
-    const minutes = parseInt(value) || 0;
+    const minutes = hhmmToMinutes(value);
     updateMutation.mutate({ taskId, workDate: date, minutes });
   };
 
@@ -170,22 +194,23 @@ export const WeeklyTimesheet = () => {
                     {timesheet.days.map(day => (
                       <TableCell key={day} align="center" sx={{ p: 0.5 }}>
                         <TextField
-                          type="number"
+                          type="text"
                           size="small"
                           disabled={row.isClosed}
-                          defaultValue={row.minutesByDay[day] === 0 ? '' : row.minutesByDay[day]}
+                          defaultValue={minutesToHHMM(row.minutesByDay[day])}
                           onBlur={(e) => {
-                              const val = parseInt(e.target.value) || 0;
+                              const val = hhmmToMinutes(e.target.value);
                               if (val !== row.minutesByDay[day]) {
                                   handleCellChange(row.taskId, day, e.target.value);
                               }
                           }}
-                          inputProps={{ min: 0, style: { textAlign: 'center' } }}
-                          sx={{ width: 60 }}
+                          placeholder="hh:mm"
+                          inputProps={{ style: { textAlign: 'center' } }}
+                          sx={{ width: 80 }}
                         />
                       </TableCell>
                     ))}
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>{rowTotal}</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>{formatTotal(rowTotal)}</TableCell>
                     <TableCell>
                         <IconButton 
                             size="small" 
@@ -210,10 +235,10 @@ export const WeeklyTimesheet = () => {
                 <TableCell colSpan={2} align="right" sx={{ fontWeight: 'bold' }}>Daily Totals</TableCell>
                 {timesheet?.days.map(day => (
                     <TableCell key={day} align="center" sx={{ fontWeight: 'bold' }}>
-                        {timesheet.totalsByDay[day]}
+                        {formatTotal(timesheet.totalsByDay[day])}
                     </TableCell>
                 ))}
-                <TableCell align="center" sx={{ fontWeight: 'bold' }}>{timesheet?.totalWeek}</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold' }}>{formatTotal(timesheet?.totalWeek || 0)}</TableCell>
                 <TableCell />
             </TableRow>
           </TableBody>

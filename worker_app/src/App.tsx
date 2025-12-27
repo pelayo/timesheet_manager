@@ -3,6 +3,7 @@ import { LoginPage } from './features/auth/LoginPage';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { WeeklyTimesheet } from './features/timesheet/WeeklyTimesheet';
+import { StatsPage } from './features/stats/StatsPage';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Route element={<RequireAuth />}>
         <Route element={<Layout />}>
           <Route path="/" element={<WeeklyTimesheet />} />
+          <Route path="/stats" element={<StatsPage />} />
         </Route>
       </Route>
 
