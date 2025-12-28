@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryColumn, Index } from 'typeorm';
 import { Project } from '../../projects/entities/project.entity';
 import { User } from '../../user/entities/user.entity';
 
@@ -8,6 +8,7 @@ export enum ProjectRole {
 }
 
 @Entity('project_members')
+@Index(['userId'])
 export class ProjectMember {
   @PrimaryColumn({ name: 'project_id' })
   projectId: string;

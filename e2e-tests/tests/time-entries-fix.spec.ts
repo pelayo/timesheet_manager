@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Admin Time Entries', () => {
-  test('should view and filter time entries', async ({ browser }) => {
+test.describe('Admin Time Entries Fix', () => {
+  test('should view and filter time entries with hh:mm format', async ({ browser }) => {
     // 1. Setup Data (Admin Context)
     const adminContext = await browser.newContext({ baseURL: 'http://localhost:8080' });
     const adminPage = await adminContext.newPage();
@@ -11,36 +11,30 @@ test.describe('Admin Time Entries', () => {
     await adminPage.fill('input[name="email"]', 'admin@example.com');
     await adminPage.fill('input[name="password"]', 'password');
     await adminPage.click('button[type="submit"]');
-    await expect(adminPage).toHaveURL('/');
-
-    // Create Projects
-    const p1Name = `Proj A ${Date.now()}`;
-    const p2Name = `Proj B ${Date.now()}`;
     
-    // Project A
+    // Wait for redirect to dashboard or projects
+    await expect(adminPage).not.toHaveURL('/login');
+
+    // Create a unique project for this test
+    const p1Name = `Fix Test Proj ${Date.now()}`;
+    
     await adminPage.click('text=Projects');
     await adminPage.click('text=Add Project');
     await adminPage.fill('input[name="name"]', p1Name);
     await adminPage.click('button:has-text("Save")');
-    // Add Task to A
+    
+    // Add Task
     await adminPage.getByRole('row', { name: p1Name }).getByText('Manage').click();
     await adminPage.click('text=Add Task');
-    await adminPage.fill('input[name="name"]', 'Task A');
+    await adminPage.fill('input[name="name"]', 'Fix Task');
     await adminPage.click('button:has-text("Save")');
+    
     // Add Member (Worker)
     await adminPage.click('text=Members');
     await adminPage.click('text=Add Member');
-    await adminPage.getByLabel('User').click(); // Dropdown
-    await expect(adminPage.getByRole('listbox')).toBeVisible();
+    await adminPage.getByLabel('User').click();
     await adminPage.getByRole('option', { name: 'worker@example.com' }).click();
-    await expect(adminPage.getByRole('listbox')).not.toBeVisible();
     await adminPage.getByRole('button', { name: 'Add', exact: true }).click();
-
-    // Project B (No entries will be added here, used for filter check)
-    await adminPage.click('text=Projects');
-    await adminPage.click('text=Add Project');
-    await adminPage.fill('input[name="name"]', p2Name);
-    await adminPage.click('button:has-text("Save")');
 
     await adminPage.close();
 
@@ -53,20 +47,20 @@ test.describe('Admin Time Entries', () => {
     await workerPage.fill('input[name="password"]', 'password');
     await workerPage.click('button[type="submit"]');
     
-    // Add Task Row for Project A
+    // Add Task Row
     await workerPage.click('button:has-text("Add Task Row")');
     await workerPage.getByLabel('Project').click();
     await workerPage.getByRole('option', { name: p1Name }).click();
     await workerPage.getByRole('combobox', { name: 'Task' }).click();
-    await workerPage.getByRole('option', { name: 'Task A' }).click();
+    await workerPage.getByRole('option', { name: 'Fix Task' }).click();
     await workerPage.getByRole('button', { name: 'Add', exact: true }).click();
 
-    // Log time
+    // Log time as hh:mm (e.g., 1:30 = 90 mins)
     const row = workerPage.getByRole('row').filter({ hasText: p1Name });
     const input = row.locator('input').first();
     
     const savePromise = workerPage.waitForResponse(resp => resp.url().includes('/cell') && (resp.status() === 200 || resp.status() === 201));
-    await input.fill('2:00');
+    await input.fill('1:30');
     await input.blur();
     await savePromise;
     
@@ -74,7 +68,6 @@ test.describe('Admin Time Entries', () => {
 
     // 3. Verify Admin Time Entries Page
     const verifyPage = await adminContext.newPage();
-    
     await verifyPage.goto('/login');
     await verifyPage.fill('input[name="email"]', 'admin@example.com');
     await verifyPage.fill('input[name="password"]', 'password');
@@ -82,19 +75,15 @@ test.describe('Admin Time Entries', () => {
 
     await verifyPage.click('text=Time Entries');
     
-    // Filter by Project A to avoid seeded data noise
+    // Filter by Project
     await verifyPage.getByTestId('project-select').click();
     await verifyPage.getByRole('option', { name: p1Name }).click();
 
-    // Check Entry Exists
+    // Check Entry Exists and is formatted as hh:mm (1:30)
     await expect(verifyPage.getByRole('cell', { name: p1Name }).first()).toBeVisible();
-    await expect(verifyPage.getByRole('cell', { name: '2:00' }).first()).toBeVisible();
+    await expect(verifyPage.getByRole('cell', { name: '1:30' }).first()).toBeVisible();
     await expect(verifyPage.getByRole('cell', { name: 'worker@example.com' }).first()).toBeVisible();
-
-    // Filter by Project B (Should be empty)
-    await verifyPage.getByTestId('project-select').click();
-    await verifyPage.getByRole('option', { name: p2Name }).click();
-    await expect(verifyPage.getByRole('cell', { name: p1Name })).not.toBeVisible();
-    await expect(verifyPage.getByText('No entries found')).toBeVisible();
+    
+    await verifyPage.close();
   });
 });

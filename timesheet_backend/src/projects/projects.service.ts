@@ -20,20 +20,27 @@ export class ProjectsService {
     return this.projectRepository.save(project);
   }
 
-  async findAll(search?: string, archived?: boolean, page: number = 1, limit: number = 10): Promise<{ items: Project[]; total: number }> {
-    const where: any = {};
+  async findAll(search?: string, archived?: boolean, page: number = 1, limit: number = 10, userId?: string): Promise<{ items: Project[]; total: number }> {
+    const qb = this.projectRepository.createQueryBuilder('project');
+
+    if (userId) {
+      qb.innerJoin(ProjectMember, 'pm', 'pm.projectId = project.id')
+        .andWhere('pm.userId = :userId', { userId });
+    }
+
     if (archived !== undefined) {
-      where.isArchived = archived;
+      qb.andWhere('project.isArchived = :archived', { archived });
     }
+
     if (search) {
-      where.name = Like(`%${search}%`);
+      qb.andWhere('project.name ILIKE :search', { search: `%${search}%` });
     }
-    const [items, total] = await this.projectRepository.findAndCount({
-      where,
-      order: { name: 'ASC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+
+    qb.orderBy('project.name', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
     return { items, total };
   }
 

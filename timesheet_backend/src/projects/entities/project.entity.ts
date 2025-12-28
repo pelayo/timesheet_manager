@@ -1,6 +1,8 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity('projects')
+@Index(['name'])
+@Index(['isGlobal', 'isArchived'])
 export class Project {
   @PrimaryGeneratedColumn('uuid')
   id: string;

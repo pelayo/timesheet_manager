@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn, Index } from 'typeorm';
 import { Project } from '../../projects/entities/project.entity';
 
 export enum TaskStatus {
@@ -7,6 +7,8 @@ export enum TaskStatus {
 }
 
 @Entity('tasks')
+@Index(['projectId'])
+@Index(['createdAt'])
 export class Task {
   @PrimaryGeneratedColumn('uuid')
   id: string;

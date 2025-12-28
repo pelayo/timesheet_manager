@@ -39,14 +39,16 @@ export const ProjectMembers = () => {
   });
 
   // Fetch all users for selection
-  const { data: users } = useQuery({
+  const { data: usersData } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const res = await api.get<User[]>('/admin/users');
+      const res = await api.get<{ items: User[] }>('/admin/users?limit=1000');
       return res.data;
     },
     enabled: open // Only fetch when dialog opens
   });
+
+  const users = usersData?.items;
 
   const addMemberMutation = useMutation({
     mutationFn: (data: any) => api.post(`/admin/projects/${projectId}/members`, data),

@@ -9,6 +9,7 @@ import { Task } from '../../tasks/entities/task.entity';
 @Index(['month'])
 @Index(['projectId'])
 @Index(['userId'])
+@Index(['taskId'])
 export class DatalakeEntry {
   @PrimaryColumn()
   id: string; // Corresponds to TimeEntry id (UUID)

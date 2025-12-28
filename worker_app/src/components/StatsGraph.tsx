@@ -117,7 +117,7 @@ export const StatsGraph = ({ chartData, seriesKeys, title = 'Statistics', filter
                   <XAxis dataKey="date" tickFormatter={formatDate} />
                   <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
                   <Tooltip 
-                    formatter={(value: any, name: string) => [value + ' h', name]} 
+                    formatter={(value: any, name: any) => [value + ' h', name]} 
                     labelFormatter={formatDate}
                   />
                   <Legend wrapperStyle={{ display: 'none' }} />

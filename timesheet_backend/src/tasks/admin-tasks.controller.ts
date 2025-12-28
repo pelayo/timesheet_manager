@@ -13,7 +13,7 @@ import { TaskStatus } from './entities/task.entity';
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @UseInterceptors(ClassSerializerInterceptor)
-@Roles(Role.Admin)
+@Roles(Role.Admin, Role.ProjectManager)
 export class AdminTasksController {
   constructor(private readonly tasksService: TasksService) {}
 

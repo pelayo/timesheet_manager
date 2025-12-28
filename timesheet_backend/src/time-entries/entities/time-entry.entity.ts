@@ -1,9 +1,12 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn, Unique } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn, Unique, Index } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { Task } from '../../tasks/entities/task.entity';
 
 @Entity('time_entries')
 @Unique(['userId', 'taskId', 'workDate'])
+@Index(['workDate'])
+@Index(['taskId'])
+@Index(['userId', 'workDate'])
 export class TimeEntry {
   @PrimaryGeneratedColumn('uuid')
   id: string;

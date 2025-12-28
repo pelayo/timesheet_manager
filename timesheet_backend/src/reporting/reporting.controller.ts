@@ -10,7 +10,7 @@ import { Role } from '../user/entities/role.enum';
 
 @Controller('admin/reports')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles(Role.Admin)
+@Roles(Role.Admin, Role.ProjectManager)
 export class ReportingController {
   constructor(private readonly reportingService: ReportingService) {}
 

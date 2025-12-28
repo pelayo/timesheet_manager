@@ -7,6 +7,7 @@ import {
   DialogActions, MenuItem, IconButton, TablePagination, InputAdornment 
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import { useForm } from 'react-hook-form';
 import { api } from '../../api/axios';
@@ -14,7 +15,7 @@ import { api } from '../../api/axios';
 interface User {
   id: string;
   email: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'project_manager';
 }
 
 interface UsersResponse {
@@ -25,7 +26,10 @@ interface UsersResponse {
 export const UsersList = () => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const { register, handleSubmit, reset } = useForm();
+  const { register: registerEdit, handleSubmit: handleSubmitEdit, reset: resetEdit } = useForm();
 
   // Pagination & Search state
   const [page, setPage] = useState(0);
@@ -58,6 +62,14 @@ export const UsersList = () => {
     }
   });
 
+  const updateMutation = useMutation({
+    mutationFn: (data: { id: string, role: string }) => api.patch(`/admin/users/${data.id}`, { role: data.role }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      handleEditClose();
+    }
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/admin/users/${id}`),
     onSuccess: () => {
@@ -75,8 +87,26 @@ export const UsersList = () => {
     reset();
   };
 
+  const handleEditOpen = (user: User) => {
+    setEditingUser(user);
+    resetEdit({ role: user.role });
+    setEditOpen(true);
+  };
+
+  const handleEditClose = () => {
+    setEditOpen(false);
+    setEditingUser(null);
+    resetEdit();
+  };
+
   const onSubmit = (data: any) => {
     createMutation.mutate(data);
+  };
+
+  const onEditSubmit = (data: any) => {
+    if (editingUser) {
+        updateMutation.mutate({ id: editingUser.id, role: data.role });
+    }
   };
 
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -137,6 +167,9 @@ export const UsersList = () => {
                 </TableCell>
                 <TableCell>{user.role}</TableCell>
                 <TableCell align="right">
+                  <IconButton onClick={() => handleEditOpen(user)}>
+                    <EditIcon />
+                  </IconButton>
                   <IconButton color="error" onClick={() => deleteMutation.mutate(user.id)}>
                     <DeleteIcon />
                   </IconButton>
@@ -190,11 +223,43 @@ export const UsersList = () => {
             >
               <MenuItem value="user">User</MenuItem>
               <MenuItem value="admin">Admin</MenuItem>
+              <MenuItem value="project_manager">Project Manager</MenuItem>
             </TextField>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Cancel</Button>
             <Button type="submit" variant="contained">Create</Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      <Dialog open={editOpen} onClose={handleEditClose}>
+        <DialogTitle>Edit User Role</DialogTitle>
+        <form onSubmit={handleSubmitEdit(onEditSubmit)}>
+          <DialogContent>
+            <TextField
+              margin="dense"
+              label="Email"
+              fullWidth
+              disabled
+              value={editingUser?.email || ''}
+            />
+            <TextField
+              select
+              margin="dense"
+              label="Role"
+              fullWidth
+              defaultValue={editingUser?.role}
+              {...registerEdit('role')}
+            >
+              <MenuItem value="user">User</MenuItem>
+              <MenuItem value="admin">Admin</MenuItem>
+              <MenuItem value="project_manager">Project Manager</MenuItem>
+            </TextField>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleEditClose}>Cancel</Button>
+            <Button type="submit" variant="contained">Update</Button>
           </DialogActions>
         </form>
       </Dialog>

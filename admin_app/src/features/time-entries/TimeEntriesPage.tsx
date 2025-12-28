@@ -28,6 +28,12 @@ interface TimeEntryListResponse {
   limit: number;
 }
 
+const formatMinutes = (minutes: number): string => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}:${m.toString().padStart(2, '0')}`;
+};
+
 export const TimeEntriesPage = () => {
   const [page, setPage] = useState(0); // MUI uses 0-based index
   const [rowsPerPage, setRowsPerPage] = useState(20);
@@ -37,13 +43,15 @@ export const TimeEntriesPage = () => {
     projectId: ''
   });
 
-  const { data: projects } = useQuery({
+  const { data: projectsData } = useQuery({
     queryKey: ['projects-select'],
     queryFn: async () => {
-      const res = await api.get<Project[]>('/admin/projects');
+      const res = await api.get<{ items: Project[] }>('/admin/projects?limit=1000');
       return res.data;
     }
   });
+  
+  const projects = projectsData?.items || [];
 
   const { data, isLoading } = useQuery({
     queryKey: ['time-entries', page, rowsPerPage, filters],
@@ -103,9 +111,10 @@ export const TimeEntriesPage = () => {
               setPage(0);
           }}
           sx={{ minWidth: 200 }}
+          slotProps={{ select: { 'data-testid': 'project-select' } as any }}
         >
           <MenuItem value="">All Projects</MenuItem>
-          {projects?.map((p) => (
+          {projects.map((p) => (
             <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
           ))}
         </TextField>
@@ -119,7 +128,7 @@ export const TimeEntriesPage = () => {
               <TableCell>User</TableCell>
               <TableCell>Project</TableCell>
               <TableCell>Task</TableCell>
-              <TableCell>Minutes</TableCell>
+              <TableCell>Time</TableCell>
               <TableCell>Notes</TableCell>
             </TableRow>
           </TableHead>
@@ -135,7 +144,7 @@ export const TimeEntriesPage = () => {
                   <TableCell>{entry.user.email}</TableCell>
                   <TableCell>{entry.task.project.name}</TableCell>
                   <TableCell>{entry.task.name}</TableCell>
-                  <TableCell>{entry.minutes}</TableCell>
+                  <TableCell>{formatMinutes(entry.minutes)}</TableCell>
                   <TableCell>{entry.notes}</TableCell>
                 </TableRow>
               ))
