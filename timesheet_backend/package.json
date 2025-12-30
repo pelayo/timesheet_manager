@@ -25,6 +25,7 @@
     "test:e2e": "JWT_SECRET=test NODE_ENV=test jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nestjs-enhanced/pg-boss": "^1.2.5",
     "@nestjs/cache-manager": "^3.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
@@ -43,6 +44,7 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.13.1",
+    "pg-boss": "^12.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "supertest": "^7.1.4",

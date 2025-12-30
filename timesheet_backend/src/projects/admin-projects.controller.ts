@@ -33,6 +33,8 @@ export class AdminProjectsController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
   ): Promise<{ items: ProjectResponseDto[]; total: number }> {
+    console.log('findAll projects');
+    await new Promise(resolve => setTimeout(resolve, 2000));
     const isArchived = archived === 'true' ? true : archived === 'false' ? false : undefined;
     
     const filterUserId = user.role === Role.ProjectManager ? user.id : undefined;

@@ -11,10 +11,14 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "test:playwright": "cd e2e-tests && npx playwright test"
+    "test:playwright": "DEBUG=pw:api,pw:browser,pw:protocol,pw:server mkdir -p e2e-tests/test-results && cd e2e-tests && npx playwright test"
   },
   "devDependencies": {
     "turbo": "latest"
   },
-  "packageManager": "npm@11.6.2"
+  "packageManager": "npm@11.6.2",
+  "dependencies": {
+    "@nestjs-enhanced/pg-boss": "^1.2.5",
+    "pg-boss": "^12.5.4"
+  }
 }

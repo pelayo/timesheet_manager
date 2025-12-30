@@ -9,6 +9,7 @@ import { UserDetail } from './features/users/UserDetail';
 import { ReportsPage } from './features/reports/ReportsPage';
 import { TimeEntriesPage } from './features/time-entries/TimeEntriesPage';
 import { StatsPage } from './features/reports/StatsPage';
+import { JobsPage } from './features/jobs/JobsPage';
 
 const Dashboard = () => <h2>Welcome to Admin Dashboard</h2>;
 
@@ -27,6 +28,7 @@ function App() {
           <Route path="/time-entries" element={<TimeEntriesPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/stats" element={<StatsPage />} />
+          <Route path="/jobs" element={<JobsPage />} />
         </Route>
       </Route>
 

@@ -13,6 +13,7 @@ import { ProjectMembersModule } from './project-members/project-members.module';
 import { TimeEntriesModule } from './time-entries/time-entries.module';
 import { ReportingModule } from './reporting/reporting.module';
 import { DatalakeModule } from './datalake/datalake.module';
+import { JobsModule } from './jobs/jobs.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { DatalakeModule } from './datalake/datalake.module';
     TimeEntriesModule,
     ReportingModule,
     DatalakeModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -26,6 +26,7 @@ interface ProjectsResponse {
 }
 
 export const ProjectsList = () => {
+  console.log('ProjectsList rendered');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -49,7 +50,6 @@ export const ProjectsList = () => {
       const res = await api.get<ProjectsResponse>('/admin/projects', { params });
       return res.data;
     },
-    placeholderData: (previousData) => previousData,
   });
 
   const projects = data?.items || [];
@@ -57,16 +57,16 @@ export const ProjectsList = () => {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => api.post('/admin/projects', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    onSettled: () => {
+      queryClient.refetchQueries({ queryKey: ['projects'] });
       handleClose();
     }
   });
 
   const updateMutation = useMutation({
     mutationFn: (data: any) => api.patch(`/admin/projects/${editingProject?.id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    onSettled: () => {
+      queryClient.refetchQueries({ queryKey: ['projects'] });
       handleClose();
     }
   });
