@@ -15,6 +15,7 @@
     "dev": "npm run start:dev",
     "seed": "ts-node -r tsconfig-paths/register src/scripts/seed.ts",
     "datalake:rebuild": "ts-node -r tsconfig-paths/register src/datalake/commands/rebuild-datalake.ts",
+    "migrate": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
     "migrate:teamwork": "ts-node -r tsconfig-paths/register src/scripts/migrate-teamwork.ts",
     "seed:workers": "ts-node -r tsconfig-paths/register src/user/commands/create-test-workers.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
