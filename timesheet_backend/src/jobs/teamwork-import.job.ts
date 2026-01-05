@@ -15,7 +15,7 @@ import { TaskStatus } from '../tasks/entities/task.entity'
 const asError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error))
 
-@Processor('teamwork-import')
+@Processor('teamwork-import', { lockDuration: 10 * 60 * 1000 })
 @Injectable()
 export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
   constructor(

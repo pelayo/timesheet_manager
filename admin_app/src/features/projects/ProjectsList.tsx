@@ -50,6 +50,7 @@ export const ProjectsList = () => {
       const res = await api.get<ProjectsResponse>('/admin/projects', { params });
       return res.data;
     },
+    placeholderData: (previousData) => previousData,
   });
 
   const projects = data?.items || [];
