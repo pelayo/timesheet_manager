@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
   Button, Box, Typography, Dialog, DialogTitle, DialogContent, TextField, 
   DialogActions, FormControlLabel, Checkbox, TablePagination, InputAdornment 
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import { useForm } from 'react-hook-form';
-import { api } from '../../api/axios';
-
-import { useNavigate } from 'react-router-dom';
+} from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
+import { useForm } from 'react-hook-form'
+import { api } from '../../api/axios'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { useNavigate } from 'react-router-dom'
 
 interface Project {
   id: string;
@@ -26,91 +26,92 @@ interface ProjectsResponse {
 }
 
 export const ProjectsList = () => {
-  console.log('ProjectsList rendered');
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const { register, handleSubmit, reset, setValue } = useForm();
+  console.log('ProjectsList rendered')
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const { register, handleSubmit, reset, setValue } = useForm()
   
   // Pagination & Search state
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['projects', page, rowsPerPage, searchTerm],
+    queryKey: ['projects', page, rowsPerPage, debouncedSearchTerm],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: (page + 1).toString(),
         limit: rowsPerPage.toString(),
-      });
-      if (searchTerm) params.append('search', searchTerm);
+      })
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm)
       
-      const res = await api.get<ProjectsResponse>('/admin/projects', { params });
-      return res.data;
+      const res = await api.get<ProjectsResponse>('/admin/projects', { params })
+      return res.data
     },
     placeholderData: (previousData) => previousData,
-  });
+  })
 
-  const projects = data?.items || [];
-  const totalCount = data?.total || 0;
+  const projects = data?.items || []
+  const totalCount = data?.total || 0
 
   const createMutation = useMutation({
     mutationFn: (data: any) => api.post('/admin/projects', data),
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: ['projects'] });
-      handleClose();
+      queryClient.refetchQueries({ queryKey: ['projects'] })
+      handleClose()
     }
-  });
+  })
 
   const updateMutation = useMutation({
     mutationFn: (data: any) => api.patch(`/admin/projects/${editingProject?.id}`, data),
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: ['projects'] });
-      handleClose();
+      queryClient.refetchQueries({ queryKey: ['projects'] })
+      handleClose()
     }
-  });
+  })
 
   const handleOpen = (project?: Project) => {
     if (project) {
-      setEditingProject(project);
-      setValue('name', project.name);
-      setValue('code', project.code);
-      setValue('description', project.description);
-      setValue('isArchived', project.isArchived);
-      setValue('isGlobal', project.isGlobal);
+      setEditingProject(project)
+      setValue('name', project.name)
+      setValue('code', project.code)
+      setValue('description', project.description)
+      setValue('isArchived', project.isArchived)
+      setValue('isGlobal', project.isGlobal)
     } else {
-      setEditingProject(null);
-      reset();
+      setEditingProject(null)
+      reset()
     }
-    setOpen(true);
-  };
+    setOpen(true)
+  }
 
   const handleClose = () => {
-    setOpen(false);
-    setEditingProject(null);
-    reset();
-  };
+    setOpen(false)
+    setEditingProject(null)
+    reset()
+  }
 
   const onSubmit = (data: any) => {
     if (editingProject) {
-      updateMutation.mutate(data);
+      updateMutation.mutate(data)
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(data)
     }
-  };
+  }
 
   const handleChangePage = (_: unknown, newPage: number) => {
-    setPage(newPage);
-  };
+    setPage(newPage)
+  }
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
+    setRowsPerPage(parseInt(event.target.value, 10))
+    setPage(0)
+  }
 
-  if (isLoading && !data) return <div>Loading...</div>;
+  if (isLoading && !data) return <div>Loading...</div>
 
   return (
     <Box>
@@ -127,8 +128,8 @@ export const ProjectsList = () => {
           fullWidth
           value={searchTerm}
           onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setPage(0);
+            setSearchTerm(e.target.value)
+            setPage(0)
           }}
           InputProps={{
             startAdornment: (
@@ -225,5 +226,5 @@ export const ProjectsList = () => {
         </form>
       </Dialog>
     </Box>
-  );
-};
+  )
+}

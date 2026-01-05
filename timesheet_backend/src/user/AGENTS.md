@@ -7,7 +7,7 @@ Manages user accounts and their system-level roles (`Admin` or `User`).
 - **User**:
   - `id`: UUID
   - `email`: Unique
-  - `password`: Hashed (in theory, currently plain text in seed for dev)
+- `password`: Hashed (bcrypt)
   - `role`: `admin` | `user`
 
 ## Key Components

@@ -13,6 +13,9 @@ import { Role } from './entities/role.enum'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { CurrentUserService } from '../common/current-user.service'
+import { hash } from 'bcryptjs'
+
+const PASSWORD_SALT_ROUNDS = 10
 
 @Injectable({ scope: Scope.REQUEST })
 export class UserService {
@@ -78,15 +81,26 @@ export class UserService {
 
     await this.ensureEmailAvailable(dto.email)
 
-    const user = this.userRepository.create(dto)
+    const user = this.userRepository.create({
+      ...dto,
+      password: await this.hashPassword(dto.password),
+    })
     return this.userRepository.save(user)
   }
 
   async createUserForImport(dto: CreateUserDto): Promise<User> {
     await this.ensureEmailAvailable(dto.email)
 
-    const user = this.userRepository.create(dto)
+    const user = this.userRepository.create({
+      ...dto,
+      password: await this.hashPassword(dto.password),
+    })
     return this.userRepository.save(user)
+  }
+
+  async setPasswordHash(userId: string, password: string): Promise<void> {
+    const hashed = await this.hashPassword(password)
+    await this.userRepository.save({ id: userId, password: hashed })
   }
 
   async updateUser(id: string, dto: UpdateUserDto): Promise<User> {
@@ -105,6 +119,9 @@ export class UserService {
     }
 
     const updated = Object.assign(user, dto)
+    if (dto.password) {
+      updated.password = await this.hashPassword(dto.password)
+    }
     return this.userRepository.save(updated)
   }
 
@@ -132,5 +149,9 @@ export class UserService {
     if (existing) {
       throw new ConflictException('Email already exists')
     }
+  }
+
+  private async hashPassword(password: string) {
+    return hash(password, PASSWORD_SALT_ROUNDS)
   }
 }

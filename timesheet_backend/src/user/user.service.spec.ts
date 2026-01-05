@@ -4,7 +4,8 @@ import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.enum';
 import { CurrentUserService } from '../common/current-user.service';
-import { ConflictException, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common'
+import { compare } from 'bcryptjs'
 
 const mockUserRepository = {
   create: jest.fn(),
@@ -52,14 +53,17 @@ describe('UserService', () => {
     });
 
     it('should create user', async () => {
-      mockCurrentUserService.get.mockReturnValue({ role: Role.Admin });
-      mockUserRepository.findOne.mockResolvedValue(null);
-      const dto = { email: 'e', password: 'p', role: Role.User };
-      mockUserRepository.create.mockReturnValue(dto);
-      mockUserRepository.save.mockResolvedValue(dto);
+      mockCurrentUserService.get.mockReturnValue({ role: Role.Admin })
+      mockUserRepository.findOne.mockResolvedValue(null)
+      const dto = { email: 'e', password: 'p', role: Role.User }
+      mockUserRepository.create.mockImplementation((data) => data)
+      mockUserRepository.save.mockImplementation(async (data) => data)
 
-      const result = await service.createUser(dto);
-      expect(result).toEqual(dto);
+      const result = await service.createUser(dto)
+      expect(result.email).toEqual(dto.email)
+      expect(result.role).toEqual(dto.role)
+      expect(result.password).not.toEqual(dto.password)
+      await expect(compare(dto.password, result.password)).resolves.toBe(true)
     });
   });
 

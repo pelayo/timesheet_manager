@@ -1,16 +1,17 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
   Button, Box, Typography, Dialog, DialogTitle, DialogContent, TextField, 
   DialogActions, MenuItem, IconButton, TablePagination, InputAdornment 
-} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import SearchIcon from '@mui/icons-material/Search';
-import { useForm } from 'react-hook-form';
-import { api } from '../../api/axios';
+} from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
+import SearchIcon from '@mui/icons-material/Search'
+import { useForm } from 'react-hook-form'
+import { api } from '../../api/axios'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 
 interface User {
   id: string;
@@ -24,99 +25,100 @@ interface UsersResponse {
 }
 
 export const UsersList = () => {
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const { register, handleSubmit, reset } = useForm();
-  const { register: registerEdit, handleSubmit: handleSubmitEdit, reset: resetEdit } = useForm();
+  const queryClient = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const { register, handleSubmit, reset } = useForm()
+  const { register: registerEdit, handleSubmit: handleSubmitEdit, reset: resetEdit } = useForm()
 
   // Pagination & Search state
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['users', page, rowsPerPage, searchTerm],
+    queryKey: ['users', page, rowsPerPage, debouncedSearchTerm],
     queryFn: async () => {
       const params = new URLSearchParams({
           page: (page + 1).toString(),
           limit: rowsPerPage.toString(),
-      });
-      if (searchTerm) params.append('search', searchTerm);
+      })
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm)
 
-      const res = await api.get<UsersResponse>('/admin/users', { params });
-      return res.data;
+      const res = await api.get<UsersResponse>('/admin/users', { params })
+      return res.data
     },
     placeholderData: (previousData) => previousData,
-  });
+  })
 
-  const users = data?.items || [];
-  const totalCount = data?.total || 0;
+  const users = data?.items || []
+  const totalCount = data?.total || 0
 
   const createMutation = useMutation({
     mutationFn: (data: any) => api.post('/admin/users', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      handleClose();
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      handleClose()
     }
-  });
+  })
 
   const updateMutation = useMutation({
     mutationFn: (data: { id: string, role: string }) => api.patch(`/admin/users/${data.id}`, { role: data.role }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      handleEditClose();
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      handleEditClose()
     }
-  });
+  })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/admin/users/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] })
     }
-  });
+  })
 
   const handleOpen = () => {
-    setOpen(true);
-    reset();
-  };
+    setOpen(true)
+    reset()
+  }
 
   const handleClose = () => {
-    setOpen(false);
-    reset();
-  };
+    setOpen(false)
+    reset()
+  }
 
   const handleEditOpen = (user: User) => {
-    setEditingUser(user);
-    resetEdit({ role: user.role });
-    setEditOpen(true);
-  };
+    setEditingUser(user)
+    resetEdit({ role: user.role })
+    setEditOpen(true)
+  }
 
   const handleEditClose = () => {
-    setEditOpen(false);
-    setEditingUser(null);
-    resetEdit();
-  };
+    setEditOpen(false)
+    setEditingUser(null)
+    resetEdit()
+  }
 
   const onSubmit = (data: any) => {
-    createMutation.mutate(data);
-  };
+    createMutation.mutate(data)
+  }
 
   const onEditSubmit = (data: any) => {
     if (editingUser) {
-        updateMutation.mutate({ id: editingUser.id, role: data.role });
+        updateMutation.mutate({ id: editingUser.id, role: data.role })
     }
-  };
+  }
 
   const handleChangePage = (_: unknown, newPage: number) => {
-    setPage(newPage);
-  };
+    setPage(newPage)
+  }
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
+    setRowsPerPage(parseInt(event.target.value, 10))
+    setPage(0)
+  }
 
   if (isLoading && !data) return <div>Loading...</div>;
 
@@ -135,8 +137,8 @@ export const UsersList = () => {
           fullWidth
           value={searchTerm}
           onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setPage(0);
+            setSearchTerm(e.target.value)
+            setPage(0)
           }}
           InputProps={{
             startAdornment: (
