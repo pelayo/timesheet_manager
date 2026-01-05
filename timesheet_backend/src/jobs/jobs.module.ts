@@ -1,40 +1,37 @@
-import { Module } from '@nestjs/common';
-import { QueueModule } from '@nestjs-enhanced/pg-boss';
-import { ConfigModule } from '../config/config.module';
-import { ConfigService } from '../config/config.service';
-import { TeamworkImportJob } from './teamwork-import.job';
-import { JobsController } from './jobs.controller';
-import { UserModule } from '../user/user.module';
-import { ProjectsModule } from '../projects/projects.module';
-import { TasksModule } from '../tasks/tasks.module';
-import { ProjectMembersModule } from '../project-members/project-members.module';
-import { TimeEntriesModule } from '../time-entries/time-entries.module';
+import { Module } from '@nestjs/common'
+import { BullModule } from '@nestjs/bullmq'
+import { ConfigModule } from '../config/config.module'
+import { TeamworkImportJob } from './teamwork-import.job'
+import { JobsController } from './jobs.controller'
+import { UserModule } from '../user/user.module'
+import { ProjectsModule } from '../projects/projects.module'
+import { TasksModule } from '../tasks/tasks.module'
+import { ProjectMembersModule } from '../project-members/project-members.module'
+import { TimeEntriesModule } from '../time-entries/time-entries.module'
 
 @Module({
   imports: [
-    QueueModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const dbConfig = config.getDatabaseConfig() as any;
-        // Construct connection string for postgres
-        // postgres://user:password@host:port/database
-        const connectionString = `postgres://${dbConfig.username}:${dbConfig.password}@${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`;
-        return {
-          application_name: 'timesheet-backend',
-          connectionString,
-        };
-      },
+    ConfigModule,
+    BullModule.forRootAsync({
+      useFactory: () => ({
+        connection: {
+          host: process.env.REDIS_HOST ?? 'redis',
+          port: Number(process.env.REDIS_PORT ?? 6379),
+          username: process.env.REDIS_USERNAME,
+          password: process.env.REDIS_PASSWORD,
+          db: Number(process.env.REDIS_DB ?? 0),
+        },
+      }),
     }),
+    BullModule.registerQueue({ name: 'teamwork-import' }),
     UserModule,
     ProjectsModule,
     TasksModule,
     ProjectMembersModule,
     TimeEntriesModule,
-    ConfigModule,
   ],
   providers: [TeamworkImportJob],
   controllers: [JobsController],
-  exports: [QueueModule],
+  exports: [BullModule],
 })
 export class JobsModule {}

@@ -82,6 +82,13 @@ export class UserService {
     return this.userRepository.save(user)
   }
 
+  async createUserForImport(dto: CreateUserDto): Promise<User> {
+    await this.ensureEmailAvailable(dto.email)
+
+    const user = this.userRepository.create(dto)
+    return this.userRepository.save(user)
+  }
+
   async updateUser(id: string, dto: UpdateUserDto): Promise<User> {
     const actor = this.currentUserService.get()
     if (actor.role !== Role.Admin) {

@@ -11,21 +11,27 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d
-    networks:
-      - timesheet-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
-    build:
-      context: .
-      dockerfile: timesheet_backend/Dockerfile
-      target: dev
-    # Use development command for watch mode
-    command: npm run dev -w timesheet_backend
+    image: node:22
+    working_dir: /app
+    command: bash -lc "npm install && npm run dev -w timesheet_backend"
     ports:
       - "3000:3000"
     environment:
@@ -37,69 +43,44 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=timesheet
       - DB_SYNCHRONIZE=false
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
     env_file:
       - ./envs/.teamwork.env
     volumes:
       - .:/app
-      - /app/node_modules
-      - /app/timesheet_backend/node_modules
-      - /app/admin_app/node_modules
-      - /app/worker_app/node_modules
-    networks:
-      - timesheet-net
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
 
   admin:
-    build:
-      context: .
-      dockerfile: admin_app/Dockerfile
-      target: dev
-      args:
-        - VITE_API_URL=http://localhost:3000
-    command: npm run dev -w admin_app
+    image: node:22
+    working_dir: /app
+    command: bash -lc "npm install && npm run dev -w admin_app -- --host 0.0.0.0"
     ports:
       - "8080:5173"
     environment:
       - VITE_API_URL=http://localhost:3000
     volumes:
       - .:/app
-      - /app/node_modules
-      - /app/timesheet_backend/node_modules
-      - /app/admin_app/node_modules
-      - /app/worker_app/node_modules
     depends_on:
       - backend
-    networks:
-      - timesheet-net
 
   worker:
-    build:
-      context: .
-      dockerfile: worker_app/Dockerfile
-      target: dev
-      args:
-        - VITE_API_URL=http://localhost:3000
-    command: npm run dev -w worker_app
+    image: node:22
+    working_dir: /app
+    command: bash -lc "npm install && npm run dev -w worker_app -- --host 0.0.0.0"
     ports:
       - "8081:5173"
     environment:
       - VITE_API_URL=http://localhost:3000
     volumes:
       - .:/app
-      - /app/node_modules
-      - /app/timesheet_backend/node_modules
-      - /app/admin_app/node_modules
-      - /app/worker_app/node_modules
     depends_on:
       - backend
-    networks:
-      - timesheet-net
-
-networks:
-  timesheet-net:
-    driver: bridge
 
 volumes:
   db_data:

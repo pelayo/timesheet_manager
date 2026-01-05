@@ -18,10 +18,10 @@ The project is a monorepo managed by **Turborepo** (`npm`), consisting of:
 *   Docker & Docker Compose
 
 ### Development Environment (Docker)
-The easiest way to run the entire stack (Backend, DB, Admin, Worker) in watch mode.
+Run the full stack in Docker with a standard Node 22 image.
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 **Services:**
@@ -29,6 +29,10 @@ docker-compose up --build
 *   **Admin App**: [http://localhost:8080](http://localhost:8080)
 *   **Worker App**: [http://localhost:8081](http://localhost:8081)
 *   **Database**: PostgreSQL on port `5432` (mapped to host).
+*   **Queue**: Redis on port `6379` (mapped to host).
+
+### Database
+The backend uses Postgres by default. Environment variables are set in `docker-compose.yml`.
 
 ### Credentials (Seeded)
 If you ran the seed script (see below), use these credentials:
@@ -43,14 +47,8 @@ If you ran the seed script (see below), use these credentials:
 ### 1. Database & Seeding
 To populate the database with initial data (Users, Projects, Tasks):
 
-**Running inside Docker (Recommended):**
 ```bash
-docker exec -it $(docker ps -qf "name=backend") npm run seed -w timesheet_backend
-```
-
-**Running Locally:**
-```bash
-npm run seed -w timesheet_backend
+docker compose exec backend npm run seed -w timesheet_backend
 ```
 
 ### 2. Testing
@@ -74,7 +72,7 @@ npm run test:cov -w timesheet_backend
 ```
 
 **Full System E2E Tests (Playwright):**
-Runs browser automation tests against the running Docker stack. Ensure `docker-compose up` is running first.
+Runs browser automation tests against the running Docker stack. Ensure `docker compose up` is running first.
 ```bash
 npm run test:playwright
 ```
@@ -106,8 +104,5 @@ To import data from Teamwork:
 ## 📝 Workflow Notes
 
 *   **Hot Reloading (HMR):** All services (Backend, Admin, Worker) run in watch mode inside Docker. Changes to source files on your host machine are reflected immediately.
-*   **Database Schema:** TypeORM `synchronize: true` is enabled for development. Schema changes in entities are automatically applied to the DB.
-*   **Dependencies:** If you install a new npm package, you must rebuild the containers:
-    ```bash
-    docker-compose up -d --build
-    ```
+*   **Database Schema:** For Postgres, prefer migrations.
+*   **Dependencies:** If you install a new npm package, restart the containers to refresh `node_modules` volumes.

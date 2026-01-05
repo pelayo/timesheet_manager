@@ -1,44 +1,40 @@
-import 'dotenv/config';
-import { Client } from 'pg';
+import 'dotenv/config'
+import { Queue } from 'bullmq'
 
 async function bootstrap() {
-  const host = process.env.DB_HOST || 'localhost';
-  const port = process.env.DB_PORT || '5432';
-  const user = process.env.DB_USERNAME || 'postgres';
-  const pass = process.env.DB_PASSWORD || 'postgres';
-  const db = process.env.DB_NAME || 'timesheet';
-  
-  const client = new Client({
-    connectionString: `postgres://${user}:${pass}@${host}:${port}/${db}`,
-  });
-  
+  const host = process.env.REDIS_HOST || 'localhost'
+  const port = Number(process.env.REDIS_PORT || 6379)
+  const username = process.env.REDIS_USERNAME
+  const password = process.env.REDIS_PASSWORD
+  const db = Number(process.env.REDIS_DB || 0)
+
+  const queue = new Queue('teamwork-import', {
+    connection: {
+      host,
+      port,
+      username,
+      password,
+      db,
+    },
+  })
+
   try {
-    await client.connect();
+    const domain = process.env.TEAMWORK_DOMAIN
+    const apiKey = process.env.TEAMWORK_API_KEY
 
-    const domain = process.env.TEAMWORK_DOMAIN;
-    const apiKey = process.env.TEAMWORK_API_KEY;
-
-    console.log(`🚀 Queueing Teamwork Migration Job...`);
-    
-    // We insert directly into pgboss.job table to avoid dependency issues in script context.
-    // pgboss worker (backend) will pick it up.
-    const query = `
-      INSERT INTO pgboss.job (name, data) 
-      VALUES ($1, $2) 
-      RETURNING id
-    `;
-    const values = ['teamwork-import', { domain, apiKey }];
-    
-    const res = await client.query(query, values);
-    const jobId = res.rows[0].id;
-
-    console.log(`✅ Job enqueued with ID: ${jobId}`);
+    console.log(`🚀 Queueing Teamwork Migration Job...`)
+    const job = await queue.add('teamwork-import', { domain, apiKey })
+    console.log(`✅ Job enqueued with ID: ${job.id}`)
   } catch (err) {
-      console.error('Failed to enqueue job:', err);
+    console.error('Failed to enqueue job:', err)
   } finally {
-      await client.end();
-      process.exit(0);
+    try {
+      await queue.close()
+    } catch (err) {
+      console.error('Failed to close Redis connection:', err)
+    }
+    process.exit(0)
   }
 }
 
-bootstrap();
+bootstrap()

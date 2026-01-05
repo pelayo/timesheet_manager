@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "dev": "JWT_SECRET=${JWT_SECRET:-local-dev-secret} VITE_API_URL=${VITE_API_URL:-http://localhost:3000} DB_TYPE=${DB_TYPE:-postgres} DB_HOST=${DB_HOST:-localhost} DB_PORT=${DB_PORT:-5432} DB_USERNAME=${DB_USERNAME:-postgres} DB_PASSWORD=${DB_PASSWORD:-postgres} DB_NAME=${DB_NAME:-timesheet} DB_SYNCHRONIZE=${DB_SYNCHRONIZE:-false} REDIS_HOST=${REDIS_HOST:-localhost} REDIS_PORT=${REDIS_PORT:-6379} REDIS_DB=${REDIS_DB:-0} turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "test:playwright": "DEBUG=pw:api,pw:browser,pw:protocol,pw:server mkdir -p e2e-tests/test-results && cd e2e-tests && npx playwright test"
@@ -16,9 +16,5 @@
   "devDependencies": {
     "turbo": "latest"
   },
-  "packageManager": "npm@11.6.2",
-  "dependencies": {
-    "@nestjs-enhanced/pg-boss": "^1.2.5",
-    "pg-boss": "^12.5.4"
-  }
+  "packageManager": "npm@11.6.2"
 }

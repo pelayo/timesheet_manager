@@ -6,7 +6,7 @@ A full-stack monorepo application for managing employee timesheets, projects, an
 
 This project is a monorepo managed by **Turborepo**, consisting of:
 
-- **`timesheet_backend`**: A [NestJS](https://nestjs.com/) API server handling business logic, authentication, and database interactions (SQLite).
+- **`timesheet_backend`**: A [NestJS](https://nestjs.com/) API server handling business logic, authentication, and database interactions (PostgreSQL).
 - **`admin_app`**: A [React](https://react.dev/) + [Vite](https://vitejs.dev/) application for Administrators to manage users, projects, and view reports.
 - **`worker_app`**: A [React](https://react.dev/) + [Vite](https://vitejs.dev/) application for Employees (Workers) to log their daily work hours.
 
