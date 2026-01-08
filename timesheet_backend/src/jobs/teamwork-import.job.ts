@@ -151,17 +151,25 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
       this.logger.info(`[Job ${jobId}] Found ${projects.length} projects.`)
 
       for (const p of projects) {
-        const existing = await this.projectsService.findAll(p.name)
-        let project = existing.items.find((ep) => ep.name === p.name)
+        const teamworkId = String(p.id)
+        let project = await this.projectsService.findByTeamworkId(teamworkId)
+        if (!project) {
+          const existing = await this.projectsService.findAll(p.name)
+          project = existing.items.find((ep) => ep.name === p.name)
+        }
 
         if (!project) {
           project = await this.projectsService.create({
             name: p.name,
             description: p.description,
             code: p.name.substring(0, 3).toUpperCase(), // Naive code gen
+            teamworkId,
           })
           this.logger.info(`[Job ${jobId}] Created project: ${p.name}`)
         } else {
+          if (!project.teamworkId) {
+            await this.projectsService.update(project.id, { teamworkId })
+          }
           this.logger.debug(`[Job ${jobId}] Project exists: ${p.name}`)
         }
         projectMap.set(String(p.id), project.id)
@@ -182,18 +190,25 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
         this.logger.debug(`[Job ${jobId}] Project ${twProjectId}: Found ${tasks.length} tasks.`)
 
         for (const t of tasks) {
-          const existingTasks = await this.tasksService.findAll(localProjectId)
-          let task = existingTasks.find((et) => et.name === t.content)
+          const teamworkId = String(t.id)
+          let task = await this.tasksService.findByTeamworkId(teamworkId)
+          if (!task) {
+            const existingTasks = await this.tasksService.findAll(localProjectId)
+            task = existingTasks.find((et) => et.name === t.content)
+          }
 
           if (!task) {
             task = await this.tasksService.create(localProjectId, {
               name: t.content,
               description: t.description,
+              teamworkId,
             })
             // Update status
             if (t.completed) {
               await this.tasksService.close(task.id)
             }
+          } else if (!task.teamworkId) {
+            await this.tasksService.update(task.id, { teamworkId })
           }
           taskMap.set(String(t.id), task.id)
         }
@@ -232,6 +247,7 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
         }
 
         for (const entry of entries) {
+          const teamworkId = String(entry.id)
           const personId = String(entry['person-id'])
           const taskId = String(entry['todo-item-id'])
 
@@ -243,6 +259,13 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
           }
 
           const task = await this.tasksService.findOne(localTaskId)
+
+          if (teamworkId) {
+            const existingByTeamwork = await this.timeEntriesService.findOneByTeamworkId(teamworkId)
+            if (existingByTeamwork) {
+              continue
+            }
+          }
           
           try {
             try {
@@ -261,6 +284,17 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
             if (totalMinutes <= 0) continue
 
             const workDate = entry.date.substring(0, 10)
+            const existingByUnique = await this.timeEntriesService.findOneByUserTaskDate(
+              localUserId,
+              localTaskId,
+              workDate,
+            )
+            if (existingByUnique) {
+              if (teamworkId && !existingByUnique.teamworkId) {
+                await this.timeEntriesService.setTeamworkId(existingByUnique.id, teamworkId)
+              }
+              continue
+            }
 
             const wasClosed = task.status === TaskStatus.CLOSED
             if (wasClosed) {
@@ -273,6 +307,7 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
                 workDate,
                 minutes: totalMinutes,
                 notes: entry.description,
+                teamworkId,
               })
               count++
             } catch (err) {
