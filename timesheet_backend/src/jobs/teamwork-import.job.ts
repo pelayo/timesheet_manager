@@ -155,7 +155,7 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
         let project = await this.projectsService.findByTeamworkId(teamworkId)
         if (!project) {
           const existing = await this.projectsService.findAll(p.name)
-          project = existing.items.find((ep) => ep.name === p.name)
+          project = existing.items.find((ep) => ep.name === p.name) ?? null
         }
 
         if (!project) {
@@ -194,7 +194,7 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
           let task = await this.tasksService.findByTeamworkId(teamworkId)
           if (!task) {
             const existingTasks = await this.tasksService.findAll(localProjectId)
-            task = existingTasks.find((et) => et.name === t.content)
+            task = existingTasks.find((et) => et.name === t.content) ?? null
           }
 
           if (!task) {
