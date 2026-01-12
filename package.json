@@ -16,5 +16,8 @@
   "devDependencies": {
     "turbo": "latest"
   },
-  "packageManager": "npm@11.6.2"
+  "packageManager": "npm@11.6.2",
+  "dependencies": {
+    "sqlite3": "^5.1.7"
+  }
 }

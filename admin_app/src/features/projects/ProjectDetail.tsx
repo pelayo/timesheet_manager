@@ -10,6 +10,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { api } from '../../api/axios';
 import { ProjectTasks } from './ProjectTasks';
 import { ProjectMembers } from './ProjectMembers';
+import { ProjectTimeAssignments } from './ProjectTimeAssignments';
 import { StatsGraph } from '../../components/StatsGraph';
 
 interface Project {
@@ -158,11 +159,13 @@ export const ProjectDetail = () => {
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
           <Tab label="Tasks" />
           <Tab label="Members" />
+          <Tab label="Time Assignments" />
         </Tabs>
       </Box>
 
       {tab === 0 && <ProjectTasks />}
       {tab === 1 && <ProjectMembers />}
+      {tab === 2 && <ProjectTimeAssignments />}
     </Box>
   );
 };

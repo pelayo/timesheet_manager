@@ -6,6 +6,8 @@ import {
   CircularProgress
 } from '@mui/material';
 import { api } from '../../api/axios';
+import { DateInput } from '../../components/DateInput';
+import { formatDisplayDate } from '../../utils/date';
 
 interface Project {
   id: string;
@@ -82,23 +84,19 @@ export const TimeEntriesPage = () => {
       <Typography variant="h4" gutterBottom>Time Entries</Typography>
       
       <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-        <TextField
+        <DateInput
           label="From"
-          type="date"
-          InputLabelProps={{ shrink: true }}
           value={filters.from}
-          onChange={(e) => {
-              setFilters({ ...filters, from: e.target.value });
+          onChange={(value) => {
+              setFilters({ ...filters, from: value });
               setPage(0);
           }}
         />
-        <TextField
+        <DateInput
           label="To"
-          type="date"
-          InputLabelProps={{ shrink: true }}
           value={filters.to}
-          onChange={(e) => {
-              setFilters({ ...filters, to: e.target.value });
+          onChange={(value) => {
+              setFilters({ ...filters, to: value });
               setPage(0);
           }}
         />
@@ -140,7 +138,7 @@ export const TimeEntriesPage = () => {
             ) : (
               data?.data.map((entry) => (
                 <TableRow key={entry.id}>
-                  <TableCell>{entry.workDate}</TableCell>
+                  <TableCell>{formatDisplayDate(entry.workDate)}</TableCell>
                   <TableCell>{entry.user.email}</TableCell>
                   <TableCell>{entry.task.project.name}</TableCell>
                   <TableCell>{entry.task.name}</TableCell>

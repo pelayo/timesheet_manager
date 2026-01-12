@@ -3,10 +3,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import { 
-  Box, Typography, TextField, FormControlLabel, Checkbox,
+  Box, Typography, FormControlLabel, Checkbox,
   List, ListItem, ListSubheader, Paper
 } from '@mui/material';
-import { format, parseISO } from 'date-fns';
+import { DateInput } from './DateInput';
+import { formatDisplayDate } from '../utils/date';
 
 interface StatsGraphProps {
   chartData: any[];
@@ -72,37 +73,25 @@ export const StatsGraph = ({ chartData, seriesKeys, title = 'Statistics', filter
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    try {
-      // Handles 'YYYY-MM-DD' and full ISO strings
-      const date = parseISO(dateStr);
-      return format(date, 'dd-MM-yyyy');
-    } catch (e) {
-      return dateStr;
-    }
-  }
+  const formatDate = (dateStr: string) => formatDisplayDate(dateStr);
 
   return (
     <Box sx={{ width: '100%', p: 2 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap" gap={2}>
           <Typography variant="h6">{title}</Typography>
           <Box display="flex" gap={2}>
-            <TextField
+            <DateInput
                 label="From"
-                type="date"
                 size="small"
-                InputLabelProps={{ shrink: true }}
                 value={localFilters.from}
-                onChange={(e) => setLocalFilters({ ...localFilters, from: e.target.value })}
+                onChange={(value) => setLocalFilters({ ...localFilters, from: value })}
                 onBlur={() => onFilterChange(localFilters)}
             />
-            <TextField
+            <DateInput
                 label="To"
-                type="date"
                 size="small"
-                InputLabelProps={{ shrink: true }}
                 value={localFilters.to}
-                onChange={(e) => setLocalFilters({ ...localFilters, to: e.target.value })}
+                onChange={(value) => setLocalFilters({ ...localFilters, to: value })}
                 onBlur={() => onFilterChange(localFilters)}
             />
           </Box>

@@ -15,6 +15,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module'
 import { ReportingModule } from './reporting/reporting.module'
 import { DatalakeModule } from './datalake/datalake.module'
 import { JobsModule } from './jobs/jobs.module'
+import { TimeAssignmentsModule } from './time-assignments/time-assignments.module'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -53,6 +54,7 @@ const isProduction = process.env.NODE_ENV === 'production'
     TasksModule,
     ProjectMembersModule,
     TimeEntriesModule,
+    TimeAssignmentsModule,
     ReportingModule,
     DatalakeModule,
     JobsModule,

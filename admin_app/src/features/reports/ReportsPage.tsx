@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Box, Typography, TextField, Button, Paper, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Paper, CircularProgress } from '@mui/material';
 import { eachDayOfInterval, format } from 'date-fns';
 import { api } from '../../api/axios';
+import { DateInput } from '../../components/DateInput';
 
 export const ReportsPage = () => {
   const [filters, setFilters] = useState({
@@ -60,19 +61,15 @@ export const ReportsPage = () => {
       <Typography variant="h4" gutterBottom>Reports</Typography>
       
       <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, alignItems: 'center' }}>
-        <TextField
+        <DateInput
           label="From"
-          type="date"
-          InputLabelProps={{ shrink: true }}
           value={filters.from}
-          onChange={(e) => setFilters({ ...filters, from: e.target.value })}
+          onChange={(value) => setFilters({ ...filters, from: value })}
         />
-        <TextField
+        <DateInput
           label="To"
-          type="date"
-          InputLabelProps={{ shrink: true }}
           value={filters.to}
-          onChange={(e) => setFilters({ ...filters, to: e.target.value })}
+          onChange={(value) => setFilters({ ...filters, to: value })}
         />
         
         <Button 

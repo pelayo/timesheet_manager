@@ -11,6 +11,7 @@ const mockProjectRepository = {
   save: jest.fn(),
   find: jest.fn(),
   findOne: jest.fn(),
+  createQueryBuilder: jest.fn(),
 };
 
 const mockMemberRepository = {
@@ -62,10 +63,19 @@ describe('ProjectsService', () => {
   describe('findAll', () => {
     it('should return an array of projects', async () => {
       const projects = [{ id: 'uuid', name: 'Test' }];
-      mockProjectRepository.find.mockResolvedValue(projects);
+      const qb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([projects, 1]),
+      };
+      mockProjectRepository.createQueryBuilder.mockReturnValue(qb);
 
       const result = await service.findAll();
-      expect(result).toEqual(projects);
+      expect(result).toEqual({ items: projects, total: 1 });
+      expect(mockProjectRepository.createQueryBuilder).toHaveBeenCalledWith('project');
     });
   });
 

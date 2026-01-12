@@ -34,6 +34,10 @@ This document tracks the implementation progress of the Timekeeping App against 
 - [x] Admin UI: Project Detail -> Members Tab
 - [x] Admin UI: Assign/Remove Users
 
+### Phase 3b — Time Assignments (Admin)
+- [x] Backend: Time Assignment CRUD with project manager checks
+- [x] Admin UI: Project Detail -> Time Assignments Tab
+
 ### Phase 4 — Time Entries (User CRUD + Admin Read)
 - [x] Backend: Time Entry CRUD (Auto-pins task on create)
 - [x] Validation Rules (Closed Task, Membership/Global Check)
