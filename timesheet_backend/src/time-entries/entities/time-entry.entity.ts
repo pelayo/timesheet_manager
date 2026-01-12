@@ -7,6 +7,7 @@ import { Task } from '../../tasks/entities/task.entity';
 @Index(['workDate'])
 @Index(['taskId'])
 @Index(['userId', 'workDate'])
+@Index(['teamworkId'], { unique: true })
 export class TimeEntry {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -33,6 +34,9 @@ export class TimeEntry {
 
   @Column({ type: 'text', nullable: true })
   notes: string;
+
+  @Column({ name: 'teamwork_id', type: 'text', nullable: true })
+  teamworkId: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

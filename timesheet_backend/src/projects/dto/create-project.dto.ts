@@ -13,6 +13,10 @@ export class CreateProjectDto {
   @IsOptional()
   description?: string;
 
+  @IsString()
+  @IsOptional()
+  teamworkId?: string;
+
   @IsBoolean()
   @IsOptional()
   isGlobal?: boolean;

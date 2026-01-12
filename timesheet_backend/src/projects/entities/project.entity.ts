@@ -3,6 +3,7 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateCol
 @Entity('projects')
 @Index(['name'])
 @Index(['isGlobal', 'isArchived'])
+@Index(['teamworkId'], { unique: true })
 export class Project {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -12,6 +13,9 @@ export class Project {
 
   @Column({ nullable: true })
   code: string;
+
+  @Column({ name: 'teamwork_id', type: 'text', nullable: true })
+  teamworkId: string | null;
 
   @Column({ type: 'text', nullable: true })
   description: string;

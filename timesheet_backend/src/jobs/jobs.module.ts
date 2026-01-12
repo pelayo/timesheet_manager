@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { BullModule } from '@nestjs/bullmq'
 import { ConfigModule } from '../config/config.module'
 import { TeamworkImportJob } from './teamwork-import.job'
+import { TeamworkExcelImportJob } from './teamwork-excel-import.job'
 import { JobsController } from './jobs.controller'
 import { UserModule } from '../user/user.module'
 import { ProjectsModule } from '../projects/projects.module'
@@ -24,13 +25,14 @@ import { TimeEntriesModule } from '../time-entries/time-entries.module'
       }),
     }),
     BullModule.registerQueue({ name: 'teamwork-import' }),
+    BullModule.registerQueue({ name: 'teamwork-excel-import' }),
     UserModule,
     ProjectsModule,
     TasksModule,
     ProjectMembersModule,
     TimeEntriesModule,
   ],
-  providers: [TeamworkImportJob],
+  providers: [TeamworkImportJob, TeamworkExcelImportJob],
   controllers: [JobsController],
   exports: [BullModule],
 })

@@ -13,6 +13,10 @@ export class UpdateProjectDto {
   @IsOptional()
   description?: string;
 
+  @IsString()
+  @IsOptional()
+  teamworkId?: string;
+
   @IsBoolean()
   @IsOptional()
   isArchived?: boolean;

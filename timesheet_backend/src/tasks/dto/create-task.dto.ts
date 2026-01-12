@@ -8,4 +8,8 @@ export class CreateTaskDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsOptional()
+  teamworkId?: string;
 }

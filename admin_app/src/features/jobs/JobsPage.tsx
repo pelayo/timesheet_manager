@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -19,13 +19,16 @@ import {
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ReplayIcon from '@mui/icons-material/Replay';
 import InfoIcon from '@mui/icons-material/Info';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import type { Job } from '../../api/jobs';
-import { getJobs, retryJob } from '../../api/jobs';
+import { getJobs, retryJob, uploadTeamworkExcel } from '../../api/jobs';
 
 export const JobsPage = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const fetchJobs = async () => {
     setLoading(true);
@@ -54,6 +57,25 @@ export const JobsPage = () => {
     }
   };
 
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      await uploadTeamworkExcel(file)
+      fetchJobs()
+    } catch (error) {
+      console.error('Failed to upload teamwork report', error)
+    } finally {
+      setUploading(false)
+      event.target.value = ''
+    }
+  }
+
   const getStatusColor = (state: string) => {
     switch (state) {
       case 'completed': return 'success';
@@ -69,9 +91,25 @@ export const JobsPage = () => {
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">System Jobs</Typography>
-        <Button startIcon={<RefreshIcon />} onClick={fetchJobs} disabled={loading}>
-          Refresh
-        </Button>
+        <Box display="flex" gap={2}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx"
+            hidden
+            onChange={handleFileChange}
+          />
+          <Button
+            startIcon={<UploadFileIcon />}
+            onClick={handleUploadClick}
+            disabled={uploading}
+          >
+            Upload Teamwork Excel
+          </Button>
+          <Button startIcon={<RefreshIcon />} onClick={fetchJobs} disabled={loading}>
+            Refresh
+          </Button>
+        </Box>
       </Box>
 
       <TableContainer component={Paper}>
