@@ -9,6 +9,7 @@ export enum TaskStatus {
 @Entity('tasks')
 @Index(['projectId'])
 @Index(['createdAt'])
+@Index(['teamworkId'], { unique: true })
 export class Task {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -25,6 +26,9 @@ export class Task {
 
   @Column({ type: 'text', nullable: true })
   description: string;
+
+  @Column({ name: 'teamwork_id', type: 'text', nullable: true })
+  teamworkId: string | null;
 
   @Column({ type: 'text', default: TaskStatus.OPEN })
   status: TaskStatus;

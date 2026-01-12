@@ -17,4 +17,8 @@ export class CreateTimeEntryDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsString()
+  @IsOptional()
+  teamworkId?: string;
 }

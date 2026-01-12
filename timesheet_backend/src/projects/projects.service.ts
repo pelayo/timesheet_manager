@@ -52,6 +52,10 @@ export class ProjectsService {
     return project;
   }
 
+  async findByTeamworkId(teamworkId: string): Promise<Project | null> {
+    return this.projectRepository.findOne({ where: { teamworkId } });
+  }
+
   async update(id: string, dto: UpdateProjectDto): Promise<Project> {
     const project = await this.findOne(id);
     const updated = Object.assign(project, dto);

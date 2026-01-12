@@ -60,6 +60,18 @@ export class TimeEntriesService {
     return saved;
   }
 
+  async findOneByTeamworkId(teamworkId: string): Promise<TimeEntry | null> {
+    return this.timeEntryRepository.findOne({ where: { teamworkId } });
+  }
+
+  async findOneByUserTaskDate(userId: string, taskId: string, workDate: string): Promise<TimeEntry | null> {
+    return this.timeEntryRepository.findOne({ where: { userId, taskId, workDate } });
+  }
+
+  async setTeamworkId(id: string, teamworkId: string): Promise<void> {
+    await this.timeEntryRepository.save({ id, teamworkId });
+  }
+
   private async ensureAccess(userId: string, projectId: string) {
     const member = await this.memberRepository.findOne({
       where: { userId, projectId },

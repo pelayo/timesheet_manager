@@ -5,11 +5,12 @@ export interface Job {
   name: string;
   data: any;
   state: 'created' | 'retry' | 'active' | 'completed' | 'expired' | 'cancelled' | 'failed';
-  createdon: string;
-  startedon: string;
-  completedon: string;
+  createdon: string | number;
+  startedon: string | number | null;
+  completedon: string | number | null;
   retrycount: number;
   output: any;
+  queue?: string;
 }
 
 export const getJobs = async (): Promise<Job[]> => {
@@ -21,3 +22,14 @@ export const retryJob = async (id: string) => {
   const response = await api.post(`/jobs/${id}/retry`);
   return response.data;
 };
+
+export const uploadTeamworkExcel = async (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await api.post('/jobs/teamwork-excel', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+  return response.data
+}
