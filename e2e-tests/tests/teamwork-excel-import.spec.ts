@@ -7,8 +7,8 @@ test.describe('Admin Teamwork Excel Import', () => {
     const filePath = path.resolve(__dirname, '../../teamwork_report.xlsx')
 
     await page.goto('/login')
-    await page.fill('input[name="email"]', 'pelayo.ramon@clouddistrict.com')
-    await page.fill('input[name="password"]', 'password123')
+    await page.fill('input[name="email"]', 'admin@example.com')
+    await page.fill('input[name="password"]', 'password')
     await page.click('button[type="submit"]')
 
     await expect(page).toHaveURL('/')

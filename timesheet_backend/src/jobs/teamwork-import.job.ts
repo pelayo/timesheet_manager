@@ -3,7 +3,7 @@ import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq'
 import type { Job } from 'bullmq'
 import axios from 'axios'
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
-import { UserService } from '../user/user.service'
+import { UserImportService } from '../user/user-import.service'
 import { ProjectsService } from '../projects/projects.service'
 import { TasksService } from '../tasks/tasks.service'
 import { ProjectMembersService } from '../project-members/project-members.service'
@@ -19,7 +19,7 @@ const asError = (error: unknown): Error =>
 @Injectable()
 export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
   constructor(
-    private readonly userService: UserService,
+    private readonly userService: UserImportService,
     private readonly projectsService: ProjectsService,
     private readonly tasksService: TasksService,
     private readonly projectMembersService: ProjectMembersService,
