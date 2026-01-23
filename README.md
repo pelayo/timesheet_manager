@@ -87,3 +87,4 @@ For deep dives into the backend modules and implementation details, refer to the
 - **[Assignments (Members)](timesheet_backend/src/project-members/AGENTS.md)**: Project membership logic.
 - **[Time Entries](timesheet_backend/src/time-entries/AGENTS.md)**: Time logging and validation rules.
 - **[Reporting](timesheet_backend/src/reporting/AGENTS.md)**: Reporting engine and CSV export.
+- **[Reporting Policy](timesheet_backend/src/reporting/REPORTING_POLICY.md)**: Cadence, time window, thresholds, and recipients.
