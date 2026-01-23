@@ -1,4 +1,4 @@
-import { Expose } from 'class-transformer'
+import { Expose, Transform } from 'class-transformer'
 import { Role } from '../entities/role.enum'
 
 export class UserResponseDto {
@@ -10,6 +10,10 @@ export class UserResponseDto {
 
   @Expose()
   role: Role
+
+  @Expose()
+  @Transform(({ obj }) => (obj.standardHours ? Number(obj.standardHours.weeklyHours) : null))
+  standardHours: number | null
 
   @Expose()
   createdAt: Date

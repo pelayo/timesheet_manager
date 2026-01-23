@@ -14,14 +14,18 @@ import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { CurrentUserService } from '../common/current-user.service'
 import { hash } from 'bcryptjs'
+import { StandardHours } from './entities/standard-hours.entity'
 
 const PASSWORD_SALT_ROUNDS = 10
+const DEFAULT_WEEKLY_HOURS = 40
 
 @Injectable({ scope: Scope.REQUEST })
 export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(StandardHours)
+    private readonly standardHoursRepository: Repository<StandardHours>,
     private readonly currentUserService: CurrentUserService,
   ) {}
 
@@ -52,6 +56,7 @@ export class UserService {
 
     const [items, total] = await this.userRepository.findAndCount({
       where,
+      relations: ['standardHours'],
       order: { email: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,
@@ -64,7 +69,7 @@ export class UserService {
     if (actor.role !== Role.Admin) {
       throw new ForbiddenException('Insufficient permissions')
     }
-    const user = await this.userRepository.findOne({ where: { id } })
+    const user = await this.userRepository.findOne({ where: { id }, relations: ['standardHours'] })
 
     if (!user) {
       throw new NotFoundException('User not found')
@@ -85,7 +90,12 @@ export class UserService {
       ...dto,
       password: await this.hashPassword(dto.password),
     })
-    return this.userRepository.save(user)
+    const savedUser = await this.userRepository.save(user)
+    await this.ensureStandardHours(savedUser.id, DEFAULT_WEEKLY_HOURS)
+    return this.userRepository.findOne({
+      where: { id: savedUser.id },
+      relations: ['standardHours'],
+    }) as Promise<User>
   }
 
   async createUserForImport(dto: CreateUserDto): Promise<User> {
@@ -95,7 +105,12 @@ export class UserService {
       ...dto,
       password: await this.hashPassword(dto.password),
     })
-    return this.userRepository.save(user)
+    const savedUser = await this.userRepository.save(user)
+    await this.ensureStandardHours(savedUser.id, DEFAULT_WEEKLY_HOURS)
+    return this.userRepository.findOne({
+      where: { id: savedUser.id },
+      relations: ['standardHours'],
+    }) as Promise<User>
   }
 
   async setPasswordHash(userId: string, password: string): Promise<void> {
@@ -118,11 +133,21 @@ export class UserService {
       await this.ensureEmailAvailable(dto.email)
     }
 
-    const updated = Object.assign(user, dto)
+    const { standardHours, ...userUpdates } = dto
+    const updated = Object.assign(user, userUpdates)
     if (dto.password) {
       updated.password = await this.hashPassword(dto.password)
     }
-    return this.userRepository.save(updated)
+    const savedUser = await this.userRepository.save(updated)
+
+    if (standardHours !== undefined) {
+      await this.ensureStandardHours(savedUser.id, standardHours)
+    }
+
+    return this.userRepository.findOne({
+      where: { id: savedUser.id },
+      relations: ['standardHours'],
+    }) as Promise<User>
   }
 
   async deleteUser(id: string): Promise<void> {
@@ -149,6 +174,21 @@ export class UserService {
     if (existing) {
       throw new ConflictException('Email already exists')
     }
+  }
+
+  private async ensureStandardHours(userId: string, weeklyHours: number) {
+    const existing = await this.standardHoursRepository.findOne({ where: { userId } })
+    if (existing) {
+      existing.weeklyHours = weeklyHours
+      await this.standardHoursRepository.save(existing)
+      return
+    }
+
+    const standardHours = this.standardHoursRepository.create({
+      userId,
+      weeklyHours,
+    })
+    await this.standardHoursRepository.save(standardHours)
   }
 
   private async hashPassword(password: string) {

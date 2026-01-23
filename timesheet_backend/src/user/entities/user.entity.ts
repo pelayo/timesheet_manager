@@ -4,9 +4,11 @@ import {
   CreateDateColumn,
   Entity,
   PrimaryGeneratedColumn,
+  OneToOne,
   UpdateDateColumn,
 } from 'typeorm'
 import { Role } from './role.enum'
+import { StandardHours } from './standard-hours.entity'
 
 @Entity({ name: 'users' })
 export class User {
@@ -22,6 +24,9 @@ export class User {
 
   @Column({ type: 'text' })
   role: Role
+
+  @OneToOne(() => StandardHours, (standardHours) => standardHours.user)
+  standardHours: StandardHours | null
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date

@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Box, Typography, Paper, Button, CircularProgress,
-  ToggleButtonGroup, ToggleButton
+  ToggleButtonGroup, ToggleButton, TextField
 } from '@mui/material';
 import { eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, isSameDay, isSameWeek, isSameMonth } from 'date-fns';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -14,12 +14,15 @@ interface User {
   id: string;
   email: string;
   role: string;
+  standardHours: number | null;
 }
 
 export const UserDetail = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [groupBy, setGroupBy] = useState('day');
+  const [standardHours, setStandardHours] = useState('');
   
   const [filters, setFilters] = useState(() => {
       const today = new Date();
@@ -40,6 +43,21 @@ export const UserDetail = () => {
           return res.data;
       }
   });
+
+  useEffect(() => {
+    if (user) {
+      setStandardHours(user.standardHours !== null ? String(user.standardHours) : '')
+    }
+  }, [user]);
+
+  const updateStandardHoursMutation = useMutation({
+    mutationFn: (hours: number) =>
+      api.patch(`/admin/users/${userId}`, { standardHours: hours }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', userId] })
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+    },
+  })
 
    const { data: stats } = useQuery({
     queryKey: ['worker-stats', userId, filters, groupBy],
@@ -111,6 +129,31 @@ export const UserDetail = () => {
           <Paper sx={{ p: 3, mb: 3 }}>
               <Typography variant="h4">{user.email}</Typography>
               <Typography variant="subtitle1" color="textSecondary">Role: {user.role}</Typography>
+              <Box display="flex" alignItems="center" gap={2} mt={2}>
+                <TextField
+                  label="Standard Hours (weekly)"
+                  type="number"
+                  size="small"
+                  value={standardHours}
+                  onChange={(event) => setStandardHours(event.target.value)}
+                  inputProps={{ min: 0, max: 168, step: 0.25 }}
+                />
+                <Button
+                  variant="contained"
+                  disabled={
+                    updateStandardHoursMutation.isPending ||
+                    standardHours === '' ||
+                    Number.isNaN(Number(standardHours)) ||
+                    (user.standardHours !== null &&
+                      Number(standardHours) === Number(user.standardHours))
+                  }
+                  onClick={() =>
+                    updateStandardHoursMutation.mutate(Number(standardHours))
+                  }
+                >
+                  Save Standard Hours
+                </Button>
+              </Box>
           </Paper>
 
            <Paper sx={{ mb: 3 }}>
