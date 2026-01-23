@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, Matches, Min } from 'class-validator';
 
 export class UpdateProjectDto {
   @IsString()
@@ -24,4 +24,14 @@ export class UpdateProjectDto {
   @IsBoolean()
   @IsOptional()
   isGlobal?: boolean;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @IsOptional()
+  budgetAmount?: number;
+
+  @IsString()
+  @Matches(/^[A-Z]{3}$/)
+  @IsOptional()
+  currency?: string;
 }

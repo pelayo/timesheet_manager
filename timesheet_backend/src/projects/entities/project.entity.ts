@@ -1,5 +1,10 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn, Index } from 'typeorm';
 
+const budgetAmountTransformer = {
+  to: (value?: number) => value,
+  from: (value: string) => Number.parseFloat(value),
+};
+
 @Entity('projects')
 @Index(['name'])
 @Index(['isGlobal', 'isArchived'])
@@ -25,6 +30,12 @@ export class Project {
 
   @Column({ default: false, name: 'is_global' })
   isGlobal: boolean;
+
+  @Column({ name: 'budget_amount', type: 'numeric', precision: 12, scale: 2, default: 0, transformer: budgetAmountTransformer })
+  budgetAmount: number;
+
+  @Column({ type: 'character varying', length: 3, default: 'USD' })
+  currency: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

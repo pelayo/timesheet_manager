@@ -20,6 +20,12 @@ export class ProjectResponseDto {
   isGlobal: boolean;
 
   @Expose()
+  budgetAmount: number;
+
+  @Expose()
+  currency: string;
+
+  @Expose()
   createdAt: Date;
 
   @Expose()
