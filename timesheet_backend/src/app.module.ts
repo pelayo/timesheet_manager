@@ -6,6 +6,7 @@ import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { AuthModule } from './auth/auth.module'
 import { UserModule } from './user/user.module'
+import { UserProfilesModule } from './user-profiles/user-profiles.module'
 import { ConfigModule } from './config/config.module'
 import { ConfigService } from './config/config.service'
 import { ProjectsModule } from './projects/projects.module'
@@ -50,6 +51,7 @@ const isProduction = process.env.NODE_ENV === 'production'
     EventEmitterModule.forRoot(),
     AuthModule,
     UserModule,
+    UserProfilesModule,
     ProjectsModule,
     TasksModule,
     ProjectMembersModule,
