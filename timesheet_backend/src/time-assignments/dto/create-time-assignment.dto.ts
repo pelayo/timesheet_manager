@@ -7,11 +7,7 @@ export class CreateTimeAssignmentDto {
 
   @IsDateString()
   @IsNotEmpty()
-  startDate: string
-
-  @IsDateString()
-  @IsNotEmpty()
-  endDate: string
+  weekStart: string
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01)

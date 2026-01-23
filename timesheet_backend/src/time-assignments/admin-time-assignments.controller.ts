@@ -1,4 +1,4 @@
-import { Body, ClassSerializerInterceptor, Controller, Delete, ForbiddenException, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards, UseInterceptors } from '@nestjs/common'
+import { BadRequestException, Body, ClassSerializerInterceptor, Controller, Delete, ForbiddenException, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common'
 import { AuthGuard } from '@nestjs/passport'
 import { plainToInstance } from 'class-transformer'
 import { RolesGuard } from '../auth/roles.guard'
@@ -11,6 +11,7 @@ import { TimeAssignmentsService } from './time-assignments.service'
 import { CreateTimeAssignmentDto } from './dto/create-time-assignment.dto'
 import { UpdateTimeAssignmentDto } from './dto/update-time-assignment.dto'
 import { TimeAssignmentResponseDto } from './dto/time-assignment-response.dto'
+import { TimeAssignmentWeeklySummaryDto } from './dto/time-assignment-weekly-summary.dto'
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -55,6 +56,28 @@ export class AdminTimeAssignmentsController {
     await this.ensureCanManage(user, assignment.projectId)
     const updated = await this.timeAssignmentsService.update(id, dto)
     return plainToInstance(TimeAssignmentResponseDto, updated, { excludeExtraneousValues: true })
+  }
+
+  @Get('time-assignments/weekly-summary')
+  @Roles(Role.Admin)
+  async weeklySummary(
+    @Query('weekStart') weekStart: string,
+    @Query('weeks') weeks: string,
+    @GetUser() user: User,
+  ): Promise<TimeAssignmentWeeklySummaryDto[]> {
+    if (!weekStart) {
+      throw new BadRequestException('weekStart is required')
+    }
+
+    if (user.role !== Role.Admin) {
+      throw new ForbiddenException('Not allowed to view assignment summary')
+    }
+
+    const weeksCount = Number(weeks) || 12
+    const summary = await this.timeAssignmentsService.getWeeklySummary(weekStart, weeksCount)
+    return summary.map(item =>
+      plainToInstance(TimeAssignmentWeeklySummaryDto, item, { excludeExtraneousValues: true }),
+    )
   }
 
   @Delete('time-assignments/:id')

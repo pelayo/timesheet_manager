@@ -16,10 +16,7 @@ export class TimeAssignmentResponseDto {
   user: UserResponseDto
 
   @Expose()
-  startDate: string
-
-  @Expose()
-  endDate: string
+  weekStart: string
 
   @Expose()
   hours: number

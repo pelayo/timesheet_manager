@@ -10,6 +10,7 @@ const hoursTransformer = {
 @Entity('time_assignments')
 @Index(['projectId'])
 @Index(['userId'])
+@Index(['projectId', 'userId', 'weekStart'], { unique: true })
 export class TimeAssignment {
   @PrimaryGeneratedColumn('uuid')
   id: string
@@ -28,11 +29,8 @@ export class TimeAssignment {
   @JoinColumn({ name: 'user_id' })
   user: User
 
-  @Column({ name: 'start_date', type: 'date' })
-  startDate: string
-
-  @Column({ name: 'end_date', type: 'date' })
-  endDate: string
+  @Column({ name: 'week_start', type: 'date' })
+  weekStart: string
 
   @Column({ type: 'numeric', precision: 10, scale: 2, transformer: hoursTransformer })
   hours: number

@@ -87,8 +87,7 @@ describe('Time Assignments (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         userId: regularUser.id,
-        startDate: '2026-01-01',
-        endDate: '2026-01-31',
+        weekStart: '2026-01-05',
         hours: 40,
       })
       .expect(201)
@@ -117,8 +116,7 @@ describe('Time Assignments (e2e)', () => {
       .set('Authorization', `Bearer ${pmLeadToken}`)
       .send({
         userId: regularUser.id,
-        startDate: '2026-02-01',
-        endDate: '2026-02-28',
+        weekStart: '2026-02-02',
         hours: 20,
       })
       .expect(201)
@@ -138,8 +136,7 @@ describe('Time Assignments (e2e)', () => {
       .set('Authorization', `Bearer ${pmMemberToken}`)
       .send({
         userId: regularUser.id,
-        startDate: '2026-03-01',
-        endDate: '2026-03-31',
+        weekStart: '2026-03-02',
         hours: 15,
       })
       .expect(403)

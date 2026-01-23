@@ -44,15 +44,14 @@ describe('TimeAssignmentsService', () => {
     it('should create and return a time assignment', async () => {
       const dto = {
         userId: 'user-1',
-        startDate: '2026-01-01',
-        endDate: '2026-01-31',
+        weekStart: '2026-01-05',
         hours: 40,
       }
       const created = { id: 'assignment-1', projectId: 'project-1', ...dto }
 
       mockTimeAssignmentsRepository.create.mockReturnValue(created)
       mockTimeAssignmentsRepository.save.mockResolvedValue(created)
-      mockTimeAssignmentsRepository.findOne.mockResolvedValue(created)
+      mockTimeAssignmentsRepository.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce(created)
 
       const result = await service.create('project-1', dto)
 
@@ -61,12 +60,11 @@ describe('TimeAssignmentsService', () => {
       expect(mockTimeAssignmentsRepository.save).toHaveBeenCalledWith(created)
     })
 
-    it('should reject invalid date ranges', async () => {
+    it('should reject non-monday week start dates', async () => {
       await expect(
         service.create('project-1', {
           userId: 'user-1',
-          startDate: '2026-02-01',
-          endDate: '2026-01-01',
+          weekStart: '2026-01-06',
           hours: 40,
         }),
       ).rejects.toThrow(BadRequestException)
@@ -84,7 +82,7 @@ describe('TimeAssignmentsService', () => {
       expect(mockTimeAssignmentsRepository.find).toHaveBeenCalledWith({
         where: { projectId: 'project-1' },
         relations: ['user'],
-        order: { startDate: 'ASC', endDate: 'ASC' },
+        order: { weekStart: 'ASC' },
       })
     })
   })
@@ -95,8 +93,7 @@ describe('TimeAssignmentsService', () => {
         id: 'assignment-1',
         projectId: 'project-1',
         userId: 'user-1',
-        startDate: '2026-01-01',
-        endDate: '2026-01-31',
+        weekStart: '2026-01-05',
         hours: 40,
       }
       const updated = { ...existing, hours: 32 }
@@ -111,16 +108,15 @@ describe('TimeAssignmentsService', () => {
       expect(mockTimeAssignmentsRepository.save).toHaveBeenCalledWith(updated)
     })
 
-    it('should reject invalid date ranges', async () => {
+    it('should reject non-monday week start dates', async () => {
       const existing = {
         id: 'assignment-1',
-        startDate: '2026-01-01',
-        endDate: '2026-01-31',
+        weekStart: '2026-01-05',
       }
       mockTimeAssignmentsRepository.findOne.mockResolvedValue(existing)
 
       await expect(
-        service.update('assignment-1', { startDate: '2026-02-01', endDate: '2026-01-01' }),
+        service.update('assignment-1', { weekStart: '2026-01-07' }),
       ).rejects.toThrow(BadRequestException)
     })
 

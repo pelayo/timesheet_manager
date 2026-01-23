@@ -7,11 +7,7 @@ export class UpdateTimeAssignmentDto {
 
   @IsDateString()
   @IsOptional()
-  startDate?: string
-
-  @IsDateString()
-  @IsOptional()
-  endDate?: string
+  weekStart?: string
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01)

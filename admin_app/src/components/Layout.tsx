@@ -32,6 +32,7 @@ export const Layout = () => {
           <Button color="inherit" onClick={() => navigate('/')}>Dashboard</Button>
           {!isPM && <Button color="inherit" onClick={() => navigate('/users')}>Users</Button>}
           <Button color="inherit" onClick={() => navigate('/projects')}>Projects</Button>
+          {!isPM && <Button color="inherit" onClick={() => navigate('/assignments')}>Assignments</Button>}
           {!isPM && <Button color="inherit" onClick={() => navigate('/time-entries')}>Time Entries</Button>}
           {!isPM && <Button color="inherit" onClick={() => navigate('/reports')}>Reports</Button>}
           {!isPM && <Button color="inherit" onClick={() => navigate('/stats')}>Stats</Button>}
