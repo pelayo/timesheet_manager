@@ -23,6 +23,7 @@ export class UserImportService {
 
     const user = this.userRepository.create({
       ...dto,
+      profileId: dto.profileId ?? null,
       password: await this.hashPassword(dto.password),
     })
     return this.userRepository.save(user)

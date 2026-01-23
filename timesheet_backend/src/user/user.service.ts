@@ -14,6 +14,7 @@ import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { CurrentUserService } from '../common/current-user.service'
 import { hash } from 'bcryptjs'
+import { UserProfile } from '../user-profiles/entities/user-profile.entity'
 
 const PASSWORD_SALT_ROUNDS = 10
 
@@ -22,6 +23,8 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(UserProfile)
+    private readonly userProfileRepository: Repository<UserProfile>,
     private readonly currentUserService: CurrentUserService,
   ) {}
 
@@ -81,8 +84,11 @@ export class UserService {
 
     await this.ensureEmailAvailable(dto.email)
 
+    const profileId = await this.resolveProfileId(dto.profileId)
     const user = this.userRepository.create({
-      ...dto,
+      email: dto.email,
+      role: dto.role,
+      profileId: profileId ?? null,
       password: await this.hashPassword(dto.password),
     })
     return this.userRepository.save(user)
@@ -91,8 +97,11 @@ export class UserService {
   async createUserForImport(dto: CreateUserDto): Promise<User> {
     await this.ensureEmailAvailable(dto.email)
 
+    const profileId = await this.resolveProfileId(dto.profileId)
     const user = this.userRepository.create({
-      ...dto,
+      email: dto.email,
+      role: dto.role,
+      profileId: profileId ?? null,
       password: await this.hashPassword(dto.password),
     })
     return this.userRepository.save(user)
@@ -118,7 +127,12 @@ export class UserService {
       await this.ensureEmailAvailable(dto.email)
     }
 
-    const updated = Object.assign(user, dto)
+    const { profileId, ...rest } = dto
+    const resolvedProfileId = await this.resolveProfileId(profileId)
+    const updated = Object.assign(user, rest)
+    if (profileId !== undefined) {
+      updated.profileId = resolvedProfileId ?? null
+    }
     if (dto.password) {
       updated.password = await this.hashPassword(dto.password)
     }
@@ -153,5 +167,19 @@ export class UserService {
 
   private async hashPassword(password: string) {
     return hash(password, PASSWORD_SALT_ROUNDS)
+  }
+
+  private async resolveProfileId(profileId?: string | null): Promise<string | null | undefined> {
+    if (profileId === undefined) {
+      return undefined
+    }
+    if (profileId === null) {
+      return null
+    }
+    const profile = await this.userProfileRepository.findOne({ where: { id: profileId } })
+    if (!profile) {
+      throw new NotFoundException('User profile not found')
+    }
+    return profile.id
   }
 }

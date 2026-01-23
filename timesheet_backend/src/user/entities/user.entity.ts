@@ -3,10 +3,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm'
 import { Role } from './role.enum'
+import { UserProfile } from '../../user-profiles/entities/user-profile.entity'
 
 @Entity({ name: 'users' })
 export class User {
@@ -22,6 +25,13 @@ export class User {
 
   @Column({ type: 'text' })
   role: Role
+
+  @Column({ name: 'profile_id', type: 'uuid', nullable: true })
+  profileId?: string | null
+
+  @ManyToOne(() => UserProfile, { nullable: true })
+  @JoinColumn({ name: 'profile_id' })
+  profile?: UserProfile | null
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date

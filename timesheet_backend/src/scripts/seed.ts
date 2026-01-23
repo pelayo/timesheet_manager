@@ -7,6 +7,7 @@ import { TasksService } from '../tasks/tasks.service'
 import { ProjectMembersService } from '../project-members/project-members.service'
 import { TimeEntriesService } from '../time-entries/time-entries.service'
 import { TimeAssignmentsService } from '../time-assignments/time-assignments.service'
+import { UserProfilesService } from '../user-profiles/user-profiles.service'
 import { Role } from '../user/entities/role.enum'
 import { User } from '../user/entities/user.entity'
 import { ProjectRole } from '../project-members/entities/project-member.entity'
@@ -31,8 +32,34 @@ async function bootstrap() {
   const membersService = await app.resolve(ProjectMembersService, contextId)
   const timeEntriesService = await app.resolve(TimeEntriesService, contextId)
   const timeAssignmentsService = await app.resolve(TimeAssignmentsService, contextId)
+  const userProfilesService = await app.resolve(UserProfilesService, contextId)
 
   console.log('Seeding data...')
+
+  // 0. Create User Profiles
+  const baselineProfiles = [
+    { name: 'Software Engineer', discipline: 'Engineering', level: 'Mid', costPerHour: 75, active: true },
+    { name: 'Senior Designer', discipline: 'Design', level: 'Senior', costPerHour: 85, active: true },
+    { name: 'Project Manager', discipline: 'Management', level: 'Lead', costPerHour: 95, active: true },
+  ]
+
+  const existingProfiles = await userProfilesService.list()
+  const existingByName = new Map(existingProfiles.map((profile) => [profile.name, profile]))
+  const seededProfiles = []
+
+  for (const profile of baselineProfiles) {
+    const existing = existingByName.get(profile.name)
+    if (existing) {
+      seededProfiles.push(existing)
+    } else {
+      const created = await userProfilesService.create(profile)
+      seededProfiles.push(created)
+      console.log('Created Profile:', created.name)
+    }
+  }
+
+  const engineerProfile = seededProfiles.find((profile) => profile.name === 'Software Engineer')
+  const managerProfile = seededProfiles.find((profile) => profile.name === 'Project Manager')
 
   // 1. Create Users
   let adminUser: User;
@@ -41,6 +68,7 @@ async function bootstrap() {
         email: 'admin@example.com',
         password: 'password',
         role: Role.Admin,
+        profileId: managerProfile?.id,
       })
       console.log('Created Admin:', adminUser.email)
   } catch (e) {
@@ -54,6 +82,7 @@ async function bootstrap() {
         email: 'worker@example.com',
         password: 'password',
         role: Role.User,
+        profileId: engineerProfile?.id,
       })
       console.log('Created Worker:', workerUser.email)
   } catch (e) {
