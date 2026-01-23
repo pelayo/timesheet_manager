@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { DataSourceOptions } from 'typeorm'
 import { User } from '../user/entities/user.entity'
+import { Profile } from '../profiles/entities/profile.entity'
 
 @Injectable()
 export class ConfigService {
@@ -54,7 +55,7 @@ export class ConfigService {
         password: this.getString('DB_PASSWORD', 'postgres'),
         database: this.getString('DB_NAME', 'timesheet'),
         synchronize: this.env.DB_SYNCHRONIZE !== 'false',
-        entities: [User],
+        entities: [User, Profile],
       }
     }
 
@@ -63,7 +64,7 @@ export class ConfigService {
       database: isTest ? ':memory:' : this.getString('DB_DATABASE', 'timesheet.sqlite'),
       synchronize: this.env.DB_SYNCHRONIZE !== 'false',
       dropSchema: isTest,
-      entities: [User],
+      entities: [User, Profile],
     }
   }
 }

@@ -10,4 +10,7 @@ export class MeUserDto {
 
   @Expose()
   role: Role
+
+  @Expose()
+  profileId: string | null
 }

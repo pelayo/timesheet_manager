@@ -10,6 +10,8 @@ import { TimeAssignmentsService } from '../time-assignments/time-assignments.ser
 import { Role } from '../user/entities/role.enum'
 import { User } from '../user/entities/user.entity'
 import { ProjectRole } from '../project-members/entities/project-member.entity'
+import { ProfilesService } from '../profiles/profiles.service'
+import { Profile } from '../profiles/entities/profile.entity'
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule)
@@ -26,6 +28,7 @@ async function bootstrap() {
 
   // Resolve Services
   const userService = await app.resolve(UserService, contextId)
+  const profilesService = await app.resolve(ProfilesService, contextId)
   const projectsService = await app.resolve(ProjectsService, contextId)
   const tasksService = await app.resolve(TasksService, contextId)
   const membersService = await app.resolve(ProjectMembersService, contextId)
@@ -34,13 +37,38 @@ async function bootstrap() {
 
   console.log('Seeding data...')
 
-  // 1. Create Users
+  // 1. Create Profiles
+  const profileSeeds: Array<Pick<Profile, 'name' | 'discipline' | 'level' | 'costPerHour' | 'active'>> = [
+    { name: 'Delivery Lead', discipline: 'Delivery', level: 'Lead', costPerHour: 120, active: true },
+    { name: 'Software Engineer', discipline: 'Engineering', level: 'Mid', costPerHour: 90, active: true },
+    { name: 'QA Analyst', discipline: 'Quality', level: 'Mid', costPerHour: 70, active: true },
+  ]
+  const profiles = new Map<string, Profile>()
+  for (const seed of profileSeeds) {
+    const existing = await profilesService.findByName(seed.name)
+    if (existing) {
+      profiles.set(seed.name, existing)
+      continue
+    }
+    const created = await profilesService.create(seed)
+    profiles.set(seed.name, created)
+  }
+
+  const adminProfile = profiles.get('Delivery Lead')
+  const workerProfile = profiles.get('Software Engineer')
+
+  if (!adminProfile || !workerProfile) {
+    throw new Error('Baseline profiles were not created')
+  }
+
+  // 2. Create Users
   let adminUser: User;
   try {
       adminUser = await userService.createUser({
         email: 'admin@example.com',
         password: 'password',
         role: Role.Admin,
+        profileId: adminProfile.id,
       })
       console.log('Created Admin:', adminUser.email)
   } catch (e) {
@@ -54,6 +82,7 @@ async function bootstrap() {
         email: 'worker@example.com',
         password: 'password',
         role: Role.User,
+        profileId: workerProfile.id,
       })
       console.log('Created Worker:', workerUser.email)
   } catch (e) {
@@ -61,14 +90,21 @@ async function bootstrap() {
       workerUser = (await userService.findOneByEmail('worker@example.com'))!
   }
 
-  // 2. Create Projects
+  if (adminUser.profileId !== adminProfile.id) {
+    adminUser = await userService.updateUser(adminUser.id, { profileId: adminProfile.id })
+  }
+  if (workerUser.profileId !== workerProfile.id) {
+    workerUser = await userService.updateUser(workerUser.id, { profileId: workerProfile.id })
+  }
+
+  // 3. Create Projects
   const projectA = await projectsService.create({ name: 'Project Alpha', code: 'ALP' })
   console.log('Created Project:', projectA.name)
 
   const projectB = await projectsService.create({ name: 'Project Beta', code: 'BET' })
   console.log('Created Project:', projectB.name)
 
-  // 3. Create Tasks
+  // 4. Create Tasks
   const createOrGetTask = async (pid: string, name: string, desc: string) => {
       const existing = await tasksService.findAll(pid);
       const found = existing.find(t => t.name === name);
@@ -85,7 +121,7 @@ async function bootstrap() {
   const taskA2 = await createOrGetTask(projectA.id, 'Development', 'Coding');
   const taskB1 = await createOrGetTask(projectB.id, 'Research', 'Market research');
 
-  // 4. Assign Members
+  // 5. Assign Members
   // Assign Admin to Project A (as Lead)
   try {
     await membersService.addMember(projectA.id, { userId: adminUser.id, role: ProjectRole.LEAD })
@@ -120,7 +156,7 @@ async function bootstrap() {
 
   const formatDate = (date: Date) => date.toISOString().split('T')[0]
 
-  // 5. Seed Time Assignments (36 hours per week)
+  // 6. Seed Time Assignments (36 hours per week)
   try {
     const baseWeekStart = getWeekStart(new Date())
     const weeksToSeed = 6
@@ -144,7 +180,7 @@ async function bootstrap() {
     console.error('Failed to seed time assignments:', e.message)
   }
 
-  // 5. Log Time (Simulate Worker logging time)
+  // 7. Log Time (Simulate Worker logging time)
   // We need to switch context to Worker? 
   // TimeEntriesService checks `userId` passed to create().
   // It checks membership.
@@ -173,7 +209,7 @@ async function bootstrap() {
       })
       console.log('Logged initial time for Worker')
 
-      // 6. Seed Bulk Time Entries (200 random entries over 6 months)
+      // 8. Seed Bulk Time Entries (200 random entries over 6 months)
       console.log('Seeding 200 random time entries...')
       const tasks = [taskA1, taskA2, taskB1];
       const now = new Date();

@@ -14,6 +14,7 @@ import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { CurrentUserService } from '../common/current-user.service'
 import { hash } from 'bcryptjs'
+import { Profile } from '../profiles/entities/profile.entity'
 
 const PASSWORD_SALT_ROUNDS = 10
 
@@ -22,6 +23,8 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Profile)
+    private readonly profileRepository: Repository<Profile>,
     private readonly currentUserService: CurrentUserService,
   ) {}
 
@@ -81,8 +84,11 @@ export class UserService {
 
     await this.ensureEmailAvailable(dto.email)
 
+    const profile = dto.profileId ? await this.getProfileOrThrow(dto.profileId) : null
     const user = this.userRepository.create({
-      ...dto,
+      email: dto.email,
+      role: dto.role,
+      profile,
       password: await this.hashPassword(dto.password),
     })
     return this.userRepository.save(user)
@@ -91,8 +97,11 @@ export class UserService {
   async createUserForImport(dto: CreateUserDto): Promise<User> {
     await this.ensureEmailAvailable(dto.email)
 
+    const profile = dto.profileId ? await this.getProfileOrThrow(dto.profileId) : null
     const user = this.userRepository.create({
-      ...dto,
+      email: dto.email,
+      role: dto.role,
+      profile,
       password: await this.hashPassword(dto.password),
     })
     return this.userRepository.save(user)
@@ -119,6 +128,9 @@ export class UserService {
     }
 
     const updated = Object.assign(user, dto)
+    if (dto.profileId) {
+      updated.profile = await this.getProfileOrThrow(dto.profileId)
+    }
     if (dto.password) {
       updated.password = await this.hashPassword(dto.password)
     }
@@ -153,5 +165,13 @@ export class UserService {
 
   private async hashPassword(password: string) {
     return hash(password, PASSWORD_SALT_ROUNDS)
+  }
+
+  private async getProfileOrThrow(profileId: string): Promise<Profile> {
+    const profile = await this.profileRepository.findOne({ where: { id: profileId } })
+    if (!profile) {
+      throw new NotFoundException('Profile not found')
+    }
+    return profile
   }
 }

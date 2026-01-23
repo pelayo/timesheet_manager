@@ -16,6 +16,7 @@ import { ReportingModule } from './reporting/reporting.module'
 import { DatalakeModule } from './datalake/datalake.module'
 import { JobsModule } from './jobs/jobs.module'
 import { TimeAssignmentsModule } from './time-assignments/time-assignments.module'
+import { ProfilesModule } from './profiles/profiles.module'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -49,6 +50,7 @@ const isProduction = process.env.NODE_ENV === 'production'
     }),
     EventEmitterModule.forRoot(),
     AuthModule,
+    ProfilesModule,
     UserModule,
     ProjectsModule,
     TasksModule,
