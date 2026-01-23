@@ -7,6 +7,7 @@ import { TasksService } from '../tasks/tasks.service'
 import { ProjectMembersService } from '../project-members/project-members.service'
 import { TimeEntriesService } from '../time-entries/time-entries.service'
 import { TimeAssignmentsService } from '../time-assignments/time-assignments.service'
+import { ProfilesService } from '../profiles/profiles.service'
 import { Role } from '../user/entities/role.enum'
 import { User } from '../user/entities/user.entity'
 import { ProjectRole } from '../project-members/entities/project-member.entity'
@@ -31,6 +32,7 @@ async function bootstrap() {
   const membersService = await app.resolve(ProjectMembersService, contextId)
   const timeEntriesService = await app.resolve(TimeEntriesService, contextId)
   const timeAssignmentsService = await app.resolve(TimeAssignmentsService, contextId)
+  const profilesService = await app.resolve(ProfilesService, contextId)
 
   console.log('Seeding data...')
 
@@ -59,6 +61,35 @@ async function bootstrap() {
   } catch (e) {
       console.log('Worker probably exists')
       workerUser = (await userService.findOneByEmail('worker@example.com'))!
+  }
+
+  // 1.5 Create Profiles
+  const baselineProfiles = [
+    { name: 'Engineer', discipline: 'Engineering', level: 'Junior', costPerHour: 45 },
+    { name: 'Engineer', discipline: 'Engineering', level: 'Mid', costPerHour: 65 },
+    { name: 'Engineer', discipline: 'Engineering', level: 'Senior', costPerHour: 90 },
+    { name: 'Designer', discipline: 'Design', level: 'Senior', costPerHour: 85 },
+  ]
+
+  let workerProfileId: string | null = null
+  for (const profileSeed of baselineProfiles) {
+    const existing = await profilesService.findByIdentity(
+      profileSeed.name,
+      profileSeed.discipline,
+      profileSeed.level,
+    )
+    const profile = existing ?? (await profilesService.create(profileSeed))
+    if (
+      profile.name === 'Engineer' &&
+      profile.discipline === 'Engineering' &&
+      profile.level === 'Mid'
+    ) {
+      workerProfileId = profile.id
+    }
+  }
+
+  if (workerProfileId) {
+    await userService.updateUser(workerUser.id, { profileId: workerProfileId })
   }
 
   // 2. Create Projects

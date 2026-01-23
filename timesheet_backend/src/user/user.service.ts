@@ -14,6 +14,7 @@ import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { CurrentUserService } from '../common/current-user.service'
 import { hash } from 'bcryptjs'
+import { Profile } from '../profiles/entities/profile.entity'
 
 const PASSWORD_SALT_ROUNDS = 10
 
@@ -22,6 +23,8 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Profile)
+    private readonly profileRepository: Repository<Profile>,
     private readonly currentUserService: CurrentUserService,
   ) {}
 
@@ -80,6 +83,9 @@ export class UserService {
     }
 
     await this.ensureEmailAvailable(dto.email)
+    if (dto.profileId !== undefined && dto.profileId !== null) {
+      await this.ensureProfileExists(dto.profileId)
+    }
 
     const user = this.userRepository.create({
       ...dto,
@@ -90,6 +96,9 @@ export class UserService {
 
   async createUserForImport(dto: CreateUserDto): Promise<User> {
     await this.ensureEmailAvailable(dto.email)
+    if (dto.profileId !== undefined && dto.profileId !== null) {
+      await this.ensureProfileExists(dto.profileId)
+    }
 
     const user = this.userRepository.create({
       ...dto,
@@ -118,7 +127,17 @@ export class UserService {
       await this.ensureEmailAvailable(dto.email)
     }
 
-    const updated = Object.assign(user, dto)
+    if (dto.profileId !== undefined) {
+      if (dto.profileId === null) {
+        user.profileId = null
+      } else {
+        await this.ensureProfileExists(dto.profileId)
+        user.profileId = dto.profileId
+      }
+    }
+
+    const { profileId, ...rest } = dto
+    const updated = Object.assign(user, rest)
     if (dto.password) {
       updated.password = await this.hashPassword(dto.password)
     }
@@ -148,6 +167,13 @@ export class UserService {
     const existing = await this.findOneByEmail(email)
     if (existing) {
       throw new ConflictException('Email already exists')
+    }
+  }
+
+  private async ensureProfileExists(profileId: string) {
+    const profile = await this.profileRepository.findOne({ where: { id: profileId } })
+    if (!profile) {
+      throw new NotFoundException('Profile not found')
     }
   }
 
