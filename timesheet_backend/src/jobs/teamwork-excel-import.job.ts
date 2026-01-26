@@ -4,7 +4,7 @@ import type { Job } from 'bullmq'
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
 import * as xlsx from 'xlsx'
 import { promises as fs } from 'fs'
-import { UserService } from '../user/user.service'
+import { UserImportService } from '../user/user-import.service'
 import { ProjectsService } from '../projects/projects.service'
 import { TasksService } from '../tasks/tasks.service'
 import { ProjectMembersService } from '../project-members/project-members.service'
@@ -69,7 +69,7 @@ const parseProjectInfo = (value: unknown) => {
 @Injectable()
 export class TeamworkExcelImportJob extends WorkerHost implements OnModuleInit {
   constructor(
-    private readonly userService: UserService,
+    private readonly userService: UserImportService,
     private readonly projectsService: ProjectsService,
     private readonly tasksService: TasksService,
     private readonly projectMembersService: ProjectMembersService,

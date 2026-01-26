@@ -6,6 +6,7 @@ import { ProjectsService } from '../projects/projects.service'
 import { TasksService } from '../tasks/tasks.service'
 import { ProjectMembersService } from '../project-members/project-members.service'
 import { TimeEntriesService } from '../time-entries/time-entries.service'
+import { TimeAssignmentsService } from '../time-assignments/time-assignments.service'
 import { Role } from '../user/entities/role.enum'
 import { User } from '../user/entities/user.entity'
 import { ProjectRole } from '../project-members/entities/project-member.entity'
@@ -29,6 +30,7 @@ async function bootstrap() {
   const tasksService = await app.resolve(TasksService, contextId)
   const membersService = await app.resolve(ProjectMembersService, contextId)
   const timeEntriesService = await app.resolve(TimeEntriesService, contextId)
+  const timeAssignmentsService = await app.resolve(TimeAssignmentsService, contextId)
 
   console.log('Seeding data...')
 
@@ -101,6 +103,46 @@ async function bootstrap() {
     await membersService.addMember(projectB.id, { userId: workerUser.id, role: ProjectRole.MEMBER })
     console.log('Assigned Worker to Project B')
   } catch (e) {}
+
+  const getWeekStart = (date: Date) => {
+    const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+    const day = utcDate.getUTCDay()
+    const diff = (day + 6) % 7
+    utcDate.setUTCDate(utcDate.getUTCDate() - diff)
+    return utcDate
+  }
+
+  const addWeeks = (date: Date, weeks: number) => {
+    const next = new Date(date.getTime())
+    next.setUTCDate(next.getUTCDate() + weeks * 7)
+    return next
+  }
+
+  const formatDate = (date: Date) => date.toISOString().split('T')[0]
+
+  // 5. Seed Time Assignments (36 hours per week)
+  try {
+    const baseWeekStart = getWeekStart(new Date())
+    const weeksToSeed = 6
+
+    for (let i = 0; i < weeksToSeed; i++) {
+      const weekStart = formatDate(addWeeks(baseWeekStart, -i))
+      await timeAssignmentsService.create(projectA.id, {
+        userId: workerUser.id,
+        weekStart,
+        hours: 20,
+      })
+      await timeAssignmentsService.create(projectB.id, {
+        userId: workerUser.id,
+        weekStart,
+        hours: 16,
+      })
+    }
+
+    console.log('Seeded time assignments')
+  } catch (e) {
+    console.error('Failed to seed time assignments:', e.message)
+  }
 
   // 5. Log Time (Simulate Worker logging time)
   // We need to switch context to Worker? 

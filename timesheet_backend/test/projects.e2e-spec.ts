@@ -74,7 +74,7 @@ describe('Projects (e2e)', () => {
             .get('/admin/projects')
             .set('Authorization', `Bearer ${tokenAdmin}`)
             .expect(200);
-          expect(res.body).toHaveLength(1);
+          expect(res.body.items).toHaveLength(1);
       });
   });
 

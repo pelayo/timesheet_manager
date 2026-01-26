@@ -44,4 +44,11 @@ export class ProjectMembersService {
     }
     await this.memberRepository.remove(member);
   }
+
+  async isProjectLead(projectId: string, userId: string): Promise<boolean> {
+    const lead = await this.memberRepository.findOne({
+      where: { projectId, userId, role: ProjectRole.LEAD },
+    });
+    return !!lead;
+  }
 }

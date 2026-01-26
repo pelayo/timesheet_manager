@@ -66,6 +66,6 @@ test.describe('Worker Flows', () => {
     // 6. Refresh and Verify persistence
     await page.reload();
     await expect(page.getByText('Research')).toBeVisible();
-    await expect(firstInput).toHaveValue('45');
+    await expect(firstInput).toHaveValue('0:45');
   });
 });
