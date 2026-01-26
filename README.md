@@ -43,6 +43,45 @@ This project is a monorepo managed by **Turborepo**, consisting of:
 
 ## 🧪 Testing
 
+### Full Test Workflow (Recommended)
+Run these steps from the repo root to avoid missing module errors:
+
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Start the stack (needed for Playwright)**:
+   ```bash
+   docker compose up --build -d
+   ```
+
+3. **Apply migrations (Postgres)**:
+   ```bash
+   docker compose exec backend npm run migrate -w timesheet_backend
+   ```
+
+4. **Seed data (admin/worker users + sample projects)**:
+   ```bash
+   docker compose exec backend npm run seed -w timesheet_backend
+   ```
+
+5. **Backend unit tests**:
+   ```bash
+   npm run test -w timesheet_backend
+   ```
+
+6. **Backend e2e tests**:
+   ```bash
+   npm run test:e2e -w timesheet_backend
+   ```
+
+7. **Playwright UI tests**:
+   ```bash
+   npm run test:playwright
+   ```
+
+### Individual Test Commands
 - **Unit Tests**:
   ```bash
   npm run test -w timesheet_backend
@@ -55,6 +94,24 @@ This project is a monorepo managed by **Turborepo**, consisting of:
   ```bash
   npm run test:cov -w timesheet_backend
   ```
+- **Playwright (UI)**:
+  ```bash
+  npm run test:playwright
+  ```
+
+### Troubleshooting (Common Issues)
+- **`Cannot find module 'jest'` or missing workspace deps**:
+  - Ensure you ran `npm install` from the repo root (not inside a package).
+  - If it still fails:
+    ```bash
+    rm -rf node_modules package-lock.json
+    npm install
+    ```
+- **Playwright tests time out or pages show "Loading..."**:
+  - Confirm Docker stack is running (`docker compose ps`) and migrations are applied.
+  - Re-run seed before Playwright to guarantee the sample data exists.
+- **Backend e2e logs Redis DNS warnings**:
+  - These are noisy but tests can still pass. If they fail, ensure Docker Redis is up.
 
 ## 📦 Core Entities
 
