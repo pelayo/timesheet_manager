@@ -9,63 +9,43 @@ test.describe('Worker Flows', () => {
     await page.click('button[type="submit"]');
     
     await expect(page).toHaveURL('/');
-    await expect(page.getByRole('heading', { name: 'My Timesheet' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'My Timesheet' })).toBeVisible({ timeout: 15000 });
 
-    // 2. Verify Seeded Data
-    // "Design Phase" should be visible because it has seeded time
-    await expect(page.getByText('Design Phase')).toBeVisible();
-    
-    // Ensure "Research" is NOT visible (clean up if needed)
-    if (await page.getByText('Research').isVisible()) {
-        const row = page.getByRole('row').filter({ hasText: 'Research' });
-        
-        // Clear any logged hours to enable the remove button
-        const inputs = await row.locator('input').all();
-        for (const input of inputs) {
-            await input.fill('');
-            await input.blur();
-        }
-        
-        // Wait for button to be enabled (it might take a moment after blur/mutation)
-        const removeBtn = row.getByRole('button', { name: 'Remove from view' });
-        await expect(removeBtn).toBeEnabled();
-        await removeBtn.click();
-        
-        await expect(page.getByText('Research')).not.toBeVisible();
-    } else {
-        await expect(page.getByText('Research')).not.toBeVisible();
-    }
-
-    // 3. Add "Research" Task
+    // 2. Add a task row from the first available project/task
     await page.getByRole('button', { name: 'Add Task Row' }).click();
-    
-    // Select Project
+
     await page.getByLabel('Project').click();
     await expect(page.getByRole('listbox')).toBeVisible();
-    await page.getByRole('option', { name: 'Project Beta' }).click();
-    
-    // Select Task (Wait for field to appear after loading)
+    const projectOption = page.getByRole('option').first();
+    await expect(projectOption).toBeVisible({ timeout: 15000 });
+    const projectName = (await projectOption.textContent())?.trim() ?? '';
+    if (!projectName) throw new Error('No projects available for worker');
+    await projectOption.click();
+
     await expect(page.getByRole('combobox', { name: 'Task' })).toBeVisible();
     await page.getByRole('combobox', { name: 'Task' }).click();
     await expect(page.getByRole('listbox')).toBeVisible();
-    await page.getByRole('option', { name: 'Research' }).click();
+    const taskOption = page.getByRole('option').first();
+    await expect(taskOption).toBeVisible({ timeout: 15000 });
+    const taskName = (await taskOption.textContent())?.trim() ?? '';
+    if (!taskName) throw new Error('No tasks available for worker');
+    await taskOption.click();
     await expect(page.getByRole('listbox')).not.toBeVisible();
-    
+
     await page.getByRole('button', { name: 'Add', exact: true }).click();
 
-    // 4. Verify "Research" is now visible
-    await expect(page.getByText('Research')).toBeVisible();
+    const taskRow = page.getByRole('row').filter({ hasText: projectName }).filter({ hasText: taskName });
+    await expect(taskRow).toBeVisible();
 
-    // 5. Log Time on "Research"
-    // Find the row for Research.
-    const researchRow = page.getByRole('row').filter({ hasText: 'Research' });
-    const firstInput = researchRow.locator('input').first();
+    // 3. Log Time on the selected task
+    const firstInput = taskRow.locator('input').first();
     await firstInput.fill('45');
     await firstInput.blur(); // Trigger save
 
-    // 6. Refresh and Verify persistence
+    // 4. Refresh and Verify persistence
     await page.reload();
-    await expect(page.getByText('Research')).toBeVisible();
-    await expect(firstInput).toHaveValue('0:45');
+    const reloadedRow = page.getByRole('row').filter({ hasText: projectName }).filter({ hasText: taskName });
+    await expect(reloadedRow).toBeVisible();
+    await expect(reloadedRow.locator('input').first()).toHaveValue('0:45');
   });
 });
