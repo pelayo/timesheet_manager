@@ -1,12 +1,17 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { TimeEntry } from '../time-entries/entities/time-entry.entity';
 import { DatalakeEntry } from '../datalake/entities/datalake-entry.entity';
 import { ReportFilterDto } from './dto/report-filter.dto';
 import { EntityGrouping, StatsFilterDto, TimeGrouping } from './dto/stats-filter.dto';
+import { LeadTeamHoursFilterDto, LeadTimeGrouping } from './dto/lead-team-hours-filter.dto';
+import { ProjectMembersService } from '../project-members/project-members.service';
+import { Role } from '../user/entities/role.enum';
+import { User } from '../user/entities/user.entity';
+import { StandardHours } from '../user/entities/standard-hours.entity';
 
 @Injectable()
 export class ReportingService {
@@ -15,6 +20,9 @@ export class ReportingService {
     private readonly timeEntryRepository: Repository<TimeEntry>,
     @InjectRepository(DatalakeEntry)
     private readonly datalakeRepository: Repository<DatalakeEntry>,
+    @InjectRepository(StandardHours)
+    private readonly standardHoursRepository: Repository<StandardHours>,
+    private readonly projectMembersService: ProjectMembersService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
@@ -172,6 +180,68 @@ export class ReportingService {
     return result;
   }
 
+  async getLeadTeamHours(projectId: string, user: User, filter: LeadTeamHoursFilterDto) {
+    const canAccess = user.role === Role.Admin || user.role === Role.ProjectManager
+      || await this.projectMembersService.isProjectLead(projectId, user.id)
+    if (!canAccess) {
+      throw new ForbiddenException('Not authorized to view project team hours')
+    }
+
+    const groupBy = filter.groupBy || LeadTimeGrouping.WEEK
+    const periodColumn = groupBy === LeadTimeGrouping.MONTH
+      ? 'entry.month'
+      : groupBy === LeadTimeGrouping.DAY
+        ? 'entry.date'
+        : 'entry.week'
+
+    const query = this.datalakeRepository.createQueryBuilder('entry')
+      .leftJoin('entry.user', 'user')
+      .select(periodColumn, 'period')
+      .addSelect('entry.userId', 'userId')
+      .addSelect('user.email', 'userEmail')
+      .addSelect('SUM(entry.minutes)', 'minutes')
+      .where('entry.projectId = :projectId', { projectId })
+
+    if (filter.from) {
+      query.andWhere('entry.date >= :from', { from: filter.from })
+    }
+    if (filter.to) {
+      query.andWhere('entry.date <= :to', { to: filter.to })
+    }
+
+    const rows = await query
+      .groupBy(periodColumn)
+      .addGroupBy('entry.userId')
+      .addGroupBy('user.email')
+      .orderBy(periodColumn, 'ASC')
+      .addOrderBy('user.email', 'ASC')
+      .getRawMany()
+
+    const parsed = rows.map((row) => ({
+      ...row,
+      minutes: Number.parseInt(row.minutes, 10),
+    }))
+
+    const userIds = [...new Set(parsed.map((row) => row.userId))]
+    const standardHours = userIds.length
+      ? await this.standardHoursRepository.find({ where: { userId: In(userIds) } })
+      : []
+    const hoursByUser = new Map(standardHours.map((entry) => [entry.userId, entry.hours]))
+
+    return parsed.map((row) => {
+      const standardHoursValue = hoursByUser.get(row.userId)
+      const thresholdMinutes = standardHoursValue
+        ? Math.round(standardHoursValue * 60 * this.getPeriodMultiplier(groupBy, row.period))
+        : null
+      return {
+        ...row,
+        thresholdMinutes,
+        isOverThreshold: thresholdMinutes !== null ? row.minutes > thresholdMinutes : false,
+        costTotal: null,
+      }
+    })
+  }
+
   async getReport(filter: ReportFilterDto) {
     const query = this.timeEntryRepository.createQueryBuilder('entry')
       .leftJoinAndSelect('entry.task', 'task')
@@ -220,5 +290,23 @@ export class ReportingService {
           case 'day': return 'entry.workDate';
           default: return null;
       }
+  }
+
+  private getPeriodMultiplier(groupBy: LeadTimeGrouping, period: string): number {
+    if (groupBy === LeadTimeGrouping.DAY) {
+      return 1 / 7
+    }
+    if (groupBy === LeadTimeGrouping.WEEK) {
+      return 1
+    }
+
+    const [yearStr, monthStr] = period.split('-')
+    const year = Number.parseInt(yearStr, 10)
+    const month = Number.parseInt(monthStr, 10)
+    if (!Number.isFinite(year) || !Number.isFinite(month)) {
+      return 1
+    }
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
+    return daysInMonth / 7
   }
 }
