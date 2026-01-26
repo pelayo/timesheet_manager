@@ -20,4 +20,8 @@ export class CreateProjectDto {
   @IsBoolean()
   @IsOptional()
   isGlobal?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isChargeable?: boolean;
 }

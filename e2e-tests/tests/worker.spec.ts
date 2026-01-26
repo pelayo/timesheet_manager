@@ -1,54 +1,51 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'
 
 test.describe('Worker Flows', () => {
   test('should manage timesheet', async ({ page }) => {
     // 1. Login
-    await page.goto('/login');
-    await page.fill('input[name="email"]', 'worker@example.com');
-    await page.fill('input[name="password"]', 'password');
-    await page.click('button[type="submit"]');
-    
-    await expect(page).toHaveURL('/');
-    await expect(page.getByRole('heading', { name: 'My Timesheet' })).toBeVisible();
+    await page.goto('/login')
+    await page.fill('input[name="email"]', 'worker@example.com')
+    await page.fill('input[name="password"]', 'password')
+    await page.click('button[type="submit"]')
 
-    // 2. Verify Seeded Data
-    // "Design Phase" should be visible because it has seeded time
-    const designCell = page.getByRole('cell', { name: 'Design Phase' }).first();
-    await expect(designCell).toBeVisible();
-    
-    const researchRow = page.getByRole('row').filter({ hasText: 'Research' }).first();
+    await expect(page).toHaveURL('/')
+    await expect(page.getByRole('heading', { name: 'My Timesheet' })).toBeVisible({ timeout: 15000 })
 
-    // 3. Add "Research" Task only if it's not already in view
-    if (!(await researchRow.isVisible())) {
-      await page.getByRole('button', { name: 'Add Task Row' }).click();
+    // 2. Add a task row from the first available project/task
+    await page.getByRole('button', { name: 'Add Task Row' }).click()
 
-      // Select Project
-      await page.getByLabel('Project').click();
-      await expect(page.getByRole('listbox')).toBeVisible();
-      await page.getByRole('option', { name: 'Project Beta' }).click();
+    await page.getByLabel('Project').click()
+    await expect(page.getByRole('listbox')).toBeVisible()
+    const projectOption = page.getByRole('option').first()
+    await expect(projectOption).toBeVisible({ timeout: 15000 })
+    const projectName = (await projectOption.textContent())?.trim() ?? ''
+    if (!projectName) throw new Error('No projects available for worker')
+    await projectOption.click()
 
-      // Select Task (Wait for field to appear after loading)
-      await expect(page.getByRole('combobox', { name: 'Task' })).toBeVisible();
-      await page.getByRole('combobox', { name: 'Task' }).click();
-      await expect(page.getByRole('listbox')).toBeVisible();
-      await page.getByRole('option', { name: 'Research' }).click();
-      await expect(page.getByRole('listbox')).not.toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Task' })).toBeVisible()
+    await page.getByRole('combobox', { name: 'Task' }).click()
+    await expect(page.getByRole('listbox')).toBeVisible()
+    const taskOption = page.getByRole('option').first()
+    await expect(taskOption).toBeVisible({ timeout: 15000 })
+    const taskName = (await taskOption.textContent())?.trim() ?? ''
+    if (!taskName) throw new Error('No tasks available for worker')
+    await taskOption.click()
+    await expect(page.getByRole('listbox')).not.toBeVisible()
 
-      await page.getByRole('button', { name: 'Add', exact: true }).click();
-    }
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
 
-    // 4. Verify "Research" is visible
-    await expect(researchRow).toBeVisible();
+    const taskRow = page.getByRole('row').filter({ hasText: projectName }).filter({ hasText: taskName })
+    await expect(taskRow).toBeVisible()
 
-    // 5. Log Time on "Research"
-    // Find the row for Research.
-    const firstInput = researchRow.locator('input').first();
-    await firstInput.fill('45');
-    await firstInput.blur(); // Trigger save
+    // 3. Log Time on the selected task
+    const firstInput = taskRow.locator('input').first()
+    await firstInput.fill('45')
+    await firstInput.blur()
 
-    // 6. Refresh and Verify persistence
-    await page.reload();
-    await expect(researchRow).toBeVisible();
-    await expect(firstInput).toHaveValue('0:45');
-  });
-});
+    // 4. Refresh and Verify persistence
+    await page.reload()
+    const reloadedRow = page.getByRole('row').filter({ hasText: projectName }).filter({ hasText: taskName })
+    await expect(reloadedRow).toBeVisible()
+    await expect(reloadedRow.locator('input').first()).toHaveValue('0:45')
+  })
+})

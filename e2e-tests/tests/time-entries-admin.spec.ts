@@ -18,10 +18,12 @@ test.describe('Admin Time Entries', () => {
     const p2Name = `Proj B ${Date.now()}`;
     
     // Project A
-    await adminPage.click('text=Projects');
+    await adminPage.getByRole('button', { name: 'Projects', exact: true }).click();
+    await adminPage.waitForURL('/projects');
     await adminPage.click('text=Add Project');
     await adminPage.fill('input[name="name"]', p1Name);
     await adminPage.click('button:has-text("Save")');
+    await expect(adminPage.getByRole('dialog')).not.toBeVisible();
     await adminPage.getByRole('textbox', { name: 'Search Projects' }).fill(p1Name);
     const projectRow = adminPage.getByRole('row', { name: p1Name });
     await expect(projectRow).toBeVisible({ timeout: 10000 });
@@ -40,11 +42,13 @@ test.describe('Admin Time Entries', () => {
     await adminPage.getByRole('button', { name: 'Add', exact: true }).click();
 
     // Project B (No entries will be added here, used for filter check)
-    await adminPage.click('text=Projects');
+    await adminPage.getByRole('button', { name: 'Projects', exact: true }).click();
+    await adminPage.waitForURL('/projects');
     await adminPage.getByRole('textbox', { name: 'Search Projects' }).fill('');
     await adminPage.click('text=Add Project');
     await adminPage.fill('input[name="name"]', p2Name);
     await adminPage.click('button:has-text("Save")');
+    await expect(adminPage.getByRole('dialog')).not.toBeVisible();
 
     await adminPage.close();
 
@@ -84,7 +88,7 @@ test.describe('Admin Time Entries', () => {
     await verifyPage.fill('input[name="password"]', 'password');
     await verifyPage.click('button[type="submit"]');
 
-    await verifyPage.click('text=Time Entries');
+    await verifyPage.getByRole('button', { name: 'Time Entries' }).click();
     
     // Filter by Project A to avoid seeded data noise
     await verifyPage.getByTestId('project-select').click();

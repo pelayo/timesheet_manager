@@ -26,6 +26,9 @@ export class Project {
   @Column({ default: false, name: 'is_global' })
   isGlobal: boolean;
 
+  @Column({ default: true, name: 'is_chargeable' })
+  isChargeable: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

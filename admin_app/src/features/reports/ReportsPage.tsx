@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Box, Typography, Button, Paper, CircularProgress } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
+import { Box, Typography, Button, Paper, CircularProgress, Divider } from '@mui/material';
 import { eachDayOfInterval, format } from 'date-fns';
 import { api } from '../../api/axios';
 import { DateInput } from '../../components/DateInput';
@@ -10,6 +11,23 @@ export const ReportsPage = () => {
     to: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  const { data: chargeableSummary, isLoading: isSummaryLoading } = useQuery({
+    queryKey: ['chargeable-summary', filters],
+    enabled: Boolean(filters.from && filters.to),
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters.from) params.append('from', filters.from);
+      if (filters.to) params.append('to', filters.to);
+      const res = await api.get('/admin/reports/chargeable-summary', { params });
+      return res.data as { chargeableMinutes: number; nonChargeableMinutes: number };
+    },
+  });
+
+  const chargeableMinutes = chargeableSummary?.chargeableMinutes ?? 0;
+  const nonChargeableMinutes = chargeableSummary?.nonChargeableMinutes ?? 0;
+  const chargeableHours = (chargeableMinutes / 60).toFixed(2);
+  const nonChargeableHours = (nonChargeableMinutes / 60).toFixed(2);
 
   const handleExport = async () => {
     if (!filters.from || !filters.to) {
@@ -80,6 +98,31 @@ export const ReportsPage = () => {
         >
           {isLoading ? <CircularProgress size={24} /> : 'Export CSV'}
         </Button>
+      </Paper>
+
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Typography variant="subtitle1" gutterBottom>Chargeable Summary</Typography>
+        {!filters.from || !filters.to ? (
+          <Typography variant="body2" color="textSecondary">
+            Select a date range to view chargeable vs non-chargeable totals.
+          </Typography>
+        ) : isSummaryLoading ? (
+          <CircularProgress size={24} />
+        ) : (
+          <Box display="flex" gap={3} flexWrap="wrap">
+            <Box>
+              <Typography variant="caption" color="textSecondary">Chargeable</Typography>
+              <Typography variant="h6">{chargeableHours} hrs</Typography>
+              <Typography variant="body2" color="textSecondary">{chargeableMinutes} minutes</Typography>
+            </Box>
+            <Divider orientation="vertical" flexItem />
+            <Box>
+              <Typography variant="caption" color="textSecondary">Non-chargeable</Typography>
+              <Typography variant="h6">{nonChargeableHours} hrs</Typography>
+              <Typography variant="body2" color="textSecondary">{nonChargeableMinutes} minutes</Typography>
+            </Box>
+          </Box>
+        )}
       </Paper>
 
       <Typography variant="body1">

@@ -20,6 +20,7 @@ interface Project {
   description: string;
   isArchived: boolean;
   isGlobal: boolean;
+  isChargeable: boolean;
 }
 
 export const ProjectDetail = () => {
@@ -127,6 +128,9 @@ export const ProjectDetail = () => {
           </Typography>
           <Typography variant="caption" display="block">
             Type: {project.isGlobal ? 'Global' : 'Assigned'}
+          </Typography>
+          <Typography variant="caption" display="block">
+            Chargeable: {project.isChargeable ? 'Yes' : 'No'}
           </Typography>
         </Box>
       </Paper>

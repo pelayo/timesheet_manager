@@ -18,13 +18,20 @@ test.describe('Admin Time Entries Fix', () => {
     // Create a unique project for this test
     const p1Name = `Fix Test Proj ${Date.now()}`;
     
-    await adminPage.click('text=Projects');
+    await adminPage.getByRole('button', { name: 'Projects' }).click();
+    await adminPage.waitForURL('/projects');
     await adminPage.click('text=Add Project');
     await adminPage.fill('input[name="name"]', p1Name);
     await adminPage.click('button:has-text("Save")');
+    await expect(adminPage.getByRole('dialog')).not.toBeVisible();
+    const projectSearch = adminPage.getByRole('textbox', { name: 'Search Projects' });
+    await expect(projectSearch).toBeVisible();
+    await projectSearch.fill(p1Name);
     
     // Add Task
-    await adminPage.getByRole('row', { name: p1Name }).getByText('Manage').click();
+    const projectRow = adminPage.getByRole('row', { name: p1Name });
+    await expect(projectRow).toBeVisible({ timeout: 10000 });
+    await projectRow.getByText('Manage').click();
     await adminPage.click('text=Add Task');
     await adminPage.fill('input[name="name"]', 'Fix Task');
     await adminPage.click('button:has-text("Save")');
@@ -73,7 +80,7 @@ test.describe('Admin Time Entries Fix', () => {
     await verifyPage.fill('input[name="password"]', 'password');
     await verifyPage.click('button[type="submit"]');
 
-    await verifyPage.click('text=Time Entries');
+    await verifyPage.getByRole('button', { name: 'Time Entries' }).click();
     
     // Filter by Project
     await verifyPage.getByTestId('project-select').click();

@@ -24,4 +24,8 @@ export class UpdateProjectDto {
   @IsBoolean()
   @IsOptional()
   isGlobal?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isChargeable?: boolean;
 }

@@ -43,4 +43,9 @@ export class ReportingController {
   async getReport(@Query() filter: ReportFilterDto) {
     return this.reportingService.getReport(filter);
   }
+
+  @Get('chargeable-summary')
+  async getChargeableSummary(@Query() filter: ReportFilterDto) {
+    return this.reportingService.getChargeableSummary(filter);
+  }
 }

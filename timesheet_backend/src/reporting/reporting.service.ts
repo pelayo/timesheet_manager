@@ -194,6 +194,35 @@ export class ReportingService {
     return query.getMany();
   }
 
+  async getChargeableSummary(filter: ReportFilterDto) {
+    const query = this.timeEntryRepository.createQueryBuilder('entry')
+      .leftJoin('entry.task', 'task')
+      .leftJoin('task.project', 'project')
+      .select('project.isChargeable', 'isChargeable')
+      .addSelect('SUM(entry.minutes)', 'totalMinutes');
+
+    this.applyFilters(query, filter);
+
+    const result = await query
+      .groupBy('project.isChargeable')
+      .getRawMany();
+
+    let chargeableMinutes = 0;
+    let nonChargeableMinutes = 0;
+
+    result.forEach(r => {
+      const isChargeable = this.parseBoolean(r.isChargeable);
+      const minutes = parseInt(r.totalMinutes, 10) || 0;
+      if (isChargeable) {
+        chargeableMinutes += minutes;
+      } else {
+        nonChargeableMinutes += minutes;
+      }
+    });
+
+    return { chargeableMinutes, nonChargeableMinutes };
+  }
+
   private applyFilters(query: any, filter: ReportFilterDto) {
     if (filter.from) {
       query.andWhere('entry.workDate >= :from', { from: filter.from });
@@ -210,6 +239,13 @@ export class ReportingService {
     if (filter.taskId) {
       query.andWhere('entry.taskId = :taskId', { taskId: filter.taskId });
     }
+  }
+
+  private parseBoolean(value: unknown): boolean {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    if (typeof value === 'string') return value === 'true' || value === '1';
+    return false;
   }
 
   private getGroupField(groupBy: string): string | null {
