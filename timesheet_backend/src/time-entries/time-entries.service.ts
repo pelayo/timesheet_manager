@@ -141,6 +141,40 @@ export class TimeEntriesService {
     return { data, total };
   }
 
+  async getCumulativeTeamworkHours(weekStart: string) {
+    this.ensureWeekStart(weekStart)
+    const endDate = this.addDaysUtc(new Date(weekStart), -1)
+    const endDateStr = this.formatDate(endDate)
+
+    const results = await this.timeEntryRepository
+      .createQueryBuilder('entry')
+      .leftJoin('entry.user', 'user')
+      .leftJoin('entry.task', 'task')
+      .leftJoin('task.project', 'project')
+      .select('entry.userId', 'userId')
+      .addSelect('user.email', 'userEmail')
+      .addSelect('project.id', 'projectId')
+      .addSelect('project.name', 'projectName')
+      .addSelect('SUM(entry.minutes)', 'minutes')
+      .where('entry.teamworkId IS NOT NULL')
+      .andWhere('entry.workDate <= :end', { end: endDateStr })
+      .groupBy('entry.userId')
+      .addGroupBy('user.email')
+      .addGroupBy('project.id')
+      .addGroupBy('project.name')
+      .orderBy('user.email', 'ASC')
+      .addOrderBy('project.name', 'ASC')
+      .getRawMany()
+
+    return results.map((row) => ({
+      userId: row.userId,
+      userEmail: row.userEmail,
+      projectId: row.projectId,
+      projectName: row.projectName,
+      hours: Number((Number(row.minutes) / 60).toFixed(2)),
+    }))
+  }
+
   async findOne(id: string): Promise<TimeEntry> {
     const entry = await this.timeEntryRepository.findOne({
       where: { id },
@@ -333,5 +367,30 @@ export class TimeEntriesService {
 
   async unpinTask(userId: string, taskId: string): Promise<void> {
       await this.pinnedTaskRepository.delete({ userId, taskId });
+  }
+
+  private ensureWeekStart(weekStart: string) {
+    const start = new Date(weekStart)
+    if (Number.isNaN(start.getTime())) {
+      throw new BadRequestException('Invalid weekStart date')
+    }
+
+    const day = start.getUTCDay()
+    if (day !== 1) {
+      throw new BadRequestException('Week start must be a Monday')
+    }
+  }
+
+  private addDaysUtc(date: Date, days: number) {
+    const next = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+    next.setUTCDate(next.getUTCDate() + days)
+    return next
+  }
+
+  private formatDate(date: Date) {
+    const year = date.getUTCFullYear()
+    const month = `${date.getUTCMonth() + 1}`.padStart(2, '0')
+    const day = `${date.getUTCDate()}`.padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 }
