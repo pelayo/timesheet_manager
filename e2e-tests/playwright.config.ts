@@ -17,7 +17,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:8080',
       },
-      testMatch: ['admin.spec.ts', 'time-entries-admin.spec.ts', 'stats-admin.spec.ts', 'time-entries-fix.spec.ts', 'teamwork-excel-import.spec.ts'],
+      testMatch: ['admin.spec.ts', 'standard-hours-admin.spec.ts', 'time-entries-admin.spec.ts', 'stats-admin.spec.ts', 'time-entries-fix.spec.ts', 'teamwork-excel-import.spec.ts'],
     },
     {
       name: 'worker',
