@@ -1,0 +1,94 @@
+[
+  {
+    "title": "As a delivery lead, I want to define reporting cadence and thresholds so that time reporting is consistent",
+    "description": "Story:\nAs a delivery lead, I want to define the reporting cadence, time window, and thresholds, so that time reporting is consistent and actionable.\n\nAcceptance:\n- Cadence, time window, and timezone are agreed and documented\n- Thresholds are defined (global or per role/profile)\n- Recipients (project leads and stakeholders) are confirmed"
+  },
+  {
+    "title": "As an admin, I want to manage user profiles with hourly rates so that cost calculations are accurate",
+    "description": "Story:\nAs an admin, I want to manage user profiles with hourly rates, so that cost calculations are accurate and maintainable.\n\nAcceptance:\n- Profile entity includes name, discipline, level, costPerHour, active\n- Users can be linked to a profile\n- Migration and seed data create baseline profiles"
+  },
+  {
+    "title": "As an admin, I want to set project budgets with currency so that cost tracking is meaningful",
+    "description": "Story:\nAs an admin, I want to set project budgets with currency, so that cost tracking is meaningful and consistent.\n\nAcceptance:\n- Project includes budgetAmount and currency\n- Defaults are applied for existing projects\n- Validation prevents negative or invalid values"
+  },
+  {
+    "title": "As an admin, I want APIs to manage profiles, assignments, and budgets so that the UI can manage them",
+    "description": "Story:\nAs an admin, I want APIs to manage profiles, user assignments, and project budgets, so that the UI can manage them securely.\n\nAcceptance:\n- CRUD endpoints exist for profiles\n- Endpoints exist to assign profiles to users\n- Endpoints exist to update project budgets\n- DTO validation uses class-validator"
+  },
+  {
+    "title": "As a finance stakeholder, I want time entry costs computed so that reports include cost data",
+    "description": "Story:\nAs a finance stakeholder, I want time entry costs computed, so that reports include reliable cost data.\n\nAcceptance:\n- Cost is calculated as hours * profile costPerHour\n- Decision documented: snapshot stored or computed on query\n- Existing entries are backfilled if needed"
+  },
+  {
+    "title": "As an admin, I want UI screens to manage profiles, assignments, and budgets so that I can maintain data",
+    "description": "Story:\nAs an admin, I want UI screens to manage profiles, user assignments, and project budgets, so that I can maintain data without DB access.\n\nAcceptance:\n- Admin UI can list/create/edit profiles\n- Admin UI can assign profiles to users\n- Admin UI can edit project budgets\n- Forms have validation and error handling"
+  },
+  {
+    "title": "As an admin, I want to manage report recipients so that company reports reach the right people",
+    "description": "Story:\nAs an admin, I want to manage report recipients, so that company reports reach the right people.\n\nAcceptance:\n- StakeholderRecipient model exists (email, active, name/label)\n- CRUD endpoints are admin-only\n- Admin UI can manage recipients"
+  },
+  {
+    "title": "As a project lead, I want aggregated team hours per time window so that I can monitor overages",
+    "description": "Story:\nAs a project lead, I want aggregated team hours per time window, so that I can monitor overages and workload.\n\nAcceptance:\n- Service aggregates hours by project lead for a time window\n- Over-threshold members are flagged\n- Cost summaries are included when available"
+  },
+  {
+    "title": "As a stakeholder, I want a company-wide report so that I can see total hours and budget variance",
+    "description": "Story:\nAs a stakeholder, I want a company-wide report, so that I can see total hours, costs, and budget variance.\n\nAcceptance:\n- Service aggregates total hours and costs\n- Budget variance is calculated (over/under)\n- Summary totals and breakdowns are included"
+  },
+  {
+    "title": "As a recipient, I want clear report emails so that I can act on over-hours cases",
+    "description": "Story:\nAs a recipient, I want clear report emails, so that I can act on over-hours cases.\n\nAcceptance:\n- HTML and text templates exist for project lead and company reports\n- Templates render correctly with real data\n- Over-hours warnings are included"
+  },
+  {
+    "title": "As an operator, I want report jobs processed by queues so that delivery is reliable",
+    "description": "Story:\nAs an operator, I want report jobs processed by queues, so that delivery is reliable and retry-safe.\n\nAcceptance:\n- BullMQ queues defined for project lead and company reports\n- Worker processors implemented in worker_app\n- Jobs are idempotent and retry-safe"
+  },
+  {
+    "title": "As an admin, I want to schedule or manually trigger report jobs so that timing is flexible",
+    "description": "Story:\nAs an admin, I want to schedule or manually trigger report jobs, so that timing is flexible and controllable.\n\nAcceptance:\n- Repeatable jobs (cron) configured for each report type\n- Admin endpoint triggers jobs manually\n- Schedules are configurable without code changes"
+  },
+  {
+    "title": "As an admin, I want report run logs so that I can audit delivery and failures",
+    "description": "Story:\nAs an admin, I want report run logs, so that I can audit delivery and failures.\n\nAcceptance:\n- Report run metadata is stored (time, status, recipients, errors)\n- Admin endpoint lists recent runs\n- Failures include debug details"
+  },
+  {
+    "title": "As a security owner, I want strict access control so that reporting data is least-privilege",
+    "description": "Story:\nAs a security owner, I want strict access control, so that reporting data follows least-privilege.\n\nAcceptance:\n- Admin-only access to profiles, budgets, recipients\n- Project leads only receive data for their projects\n- Key endpoints and UI flows are permission-checked"
+  },
+  {
+    "title": "As a QA engineer, I want tests for cost and reporting logic so that regressions are caught",
+    "description": "Story:\nAs a QA engineer, I want tests for cost and reporting logic, so that regressions are caught early.\n\nAcceptance:\n- Unit tests cover cost and threshold logic\n- Integration tests cover report aggregation\n- Worker job tests cover BullMQ processors"
+  },
+  {
+    "title": "As an operator, I want reporting documentation so that setup and operations are clear",
+    "description": "Story:\nAs an operator, I want reporting documentation, so that setup and operations are clear.\n\nAcceptance:\n- Required env vars are documented\n- Runbook covers triggering reports and reading logs\n- Cost and budget variance rules are described"
+  },
+  {
+    "title": "As an admin, I want cumulative Teamwork hours before forecast weeks so that I see past effort",
+    "description": "Story:\nAs an admin, I want a cumulative Teamwork hours column before forecast weeks, so that I see past effort at a glance.\n\nAcceptance:\n- Column appears before the first forecastable week\n- Cutoff is project start through the end of the previous week\n- Column is visible only to admin/list roles"
+  },
+  {
+    "title": "As a project manager, I want planned absences imported from Factorial so that forecasts are realistic",
+    "description": "Story:\nAs a project manager, I want planned absences imported from Factorial, so that forecasts are realistic.\n\nAcceptance:\n- New job imports forecasted absences with date ranges\n- Absences are stored per user\n- Job runs independently of Teamwork imports"
+  },
+  {
+    "title": "As a project manager, I want an absences summary panel so that I can see upcoming time off",
+    "description": "Story:\nAs a project manager, I want an absences summary panel, so that I can see upcoming time off without cluttering the table.\n\nAcceptance:\n- Collapsible section above the forecast table\n- Per-user list of upcoming absence dates\n- Data matches Factorial import"
+  },
+  {
+    "title": "As a data engineer, I want Teamwork entries without tasks imported so that no time is lost",
+    "description": "Story:\nAs a data engineer, I want Teamwork entries without tasks imported, so that no time is lost.\n\nAcceptance:\n- Missing-task entries are mapped to a default task (e.g. \"project general\")\n- Import logs include counts of recovered entries\n- No entries are dropped due to missing tasks"
+  },
+  {
+    "title": "As a data engineer, I want a reconciliation mode so that I can debug missing Teamwork entries",
+    "description": "Story:\nAs a data engineer, I want a reconciliation mode for a short time window, so that I can debug missing Teamwork entries by user.\n\nAcceptance:\n- Fetches a recent window (7-15 days)\n- Compares imported entries per user vs Teamwork source\n- Produces a discrepancy report"
+  },
+  {
+    "title": "As a portfolio owner, I want projects flagged as chargeable so that reporting separates chargeable work",
+    "description": "Story:\nAs a portfolio owner, I want projects flagged as chargeable, so that reporting separates chargeable and non-chargeable work.\n\nAcceptance:\n- Project has a chargeable boolean\n- Admin UI can edit the flag\n- Report summarizes chargeable vs non-chargeable totals"
+  },
+  {
+    "title": "As an admin, I want per-user standard hours so that capacity reflects contract exceptions",
+    "description": "Story:\nAs an admin, I want per-user standard hours, so that capacity reflects contract exceptions (e.g. 36h or 75%).\n\nAcceptance:\n- StandardHours table stores weekly hours per user\n- Admin UI can edit standard hours\n- No migration required for updates"
+  }
+]

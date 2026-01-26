@@ -24,12 +24,10 @@ test.describe('Admin Time Entries', () => {
     await adminPage.fill('input[name="name"]', p1Name);
     await adminPage.click('button:has-text("Save")');
     await expect(adminPage.getByRole('dialog')).not.toBeVisible();
-    const projectSearch = adminPage.getByRole('textbox', { name: 'Search Projects' });
-    await expect(projectSearch).toBeVisible();
-    await projectSearch.fill(p1Name);
-    // Add Task to A
+    await adminPage.getByRole('textbox', { name: 'Search Projects' }).fill(p1Name);
     const projectRow = adminPage.getByRole('row', { name: p1Name });
     await expect(projectRow).toBeVisible({ timeout: 10000 });
+    // Add Task to A
     await projectRow.getByText('Manage').click();
     await adminPage.click('text=Add Task');
     await adminPage.fill('input[name="name"]', 'Task A');
@@ -46,6 +44,7 @@ test.describe('Admin Time Entries', () => {
     // Project B (No entries will be added here, used for filter check)
     await adminPage.getByRole('button', { name: 'Projects', exact: true }).click();
     await adminPage.waitForURL('/projects');
+    await adminPage.getByRole('textbox', { name: 'Search Projects' }).fill('');
     await adminPage.click('text=Add Project');
     await adminPage.fill('input[name="name"]', p2Name);
     await adminPage.click('button:has-text("Save")');
