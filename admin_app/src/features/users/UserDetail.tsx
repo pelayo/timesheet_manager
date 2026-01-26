@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Box, Typography, Paper, Button, CircularProgress,
-  ToggleButtonGroup, ToggleButton
+  ToggleButtonGroup, ToggleButton, TextField
 } from '@mui/material';
 import { eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, isSameDay, isSameWeek, isSameMonth } from 'date-fns';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -16,10 +16,18 @@ interface User {
   role: string;
 }
 
+interface StandardHoursResponse {
+  userId: string;
+  hours: number | null;
+}
+
 export const UserDetail = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [groupBy, setGroupBy] = useState('day');
+  const [standardHoursInput, setStandardHoursInput] = useState('');
+  const [standardHoursError, setStandardHoursError] = useState('');
   
   const [filters, setFilters] = useState(() => {
       const today = new Date();
@@ -40,6 +48,31 @@ export const UserDetail = () => {
           return res.data;
       }
   });
+
+  const { data: standardHours, isLoading: standardHoursLoading } = useQuery({
+    queryKey: ['standard-hours', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const res = await api.get<StandardHoursResponse>(`/admin/users/${userId}/standard-hours`);
+      return res.data;
+    }
+  });
+
+  const updateStandardHoursMutation = useMutation({
+    mutationFn: (hours: number) => api.put<StandardHoursResponse>(`/admin/users/${userId}/standard-hours`, { hours }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['standard-hours', userId] });
+    }
+  });
+
+  useEffect(() => {
+    if (!standardHours) return;
+    if (standardHours.hours === null) {
+      setStandardHoursInput('');
+      return;
+    }
+    setStandardHoursInput(String(standardHours.hours));
+  }, [standardHours]);
 
    const { data: stats } = useQuery({
     queryKey: ['worker-stats', userId, filters, groupBy],
@@ -103,6 +136,17 @@ export const UserDetail = () => {
   if (isLoading) return <CircularProgress />;
   if (!user) return <div>User not found</div>;
 
+  const handleStandardHoursSave = () => {
+    const trimmed = standardHoursInput.trim();
+    const parsed = Number(trimmed);
+    if (!trimmed || Number.isNaN(parsed) || parsed < 0) {
+      setStandardHoursError('Enter a valid non-negative number');
+      return;
+    }
+    setStandardHoursError('');
+    updateStandardHoursMutation.mutate(parsed);
+  };
+
   return (
       <Box>
           <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/users')} sx={{ mb: 2 }}>
@@ -111,6 +155,29 @@ export const UserDetail = () => {
           <Paper sx={{ p: 3, mb: 3 }}>
               <Typography variant="h4">{user.email}</Typography>
               <Typography variant="subtitle1" color="textSecondary">Role: {user.role}</Typography>
+              <Box mt={2} display="flex" gap={2} alignItems="center" flexWrap="wrap">
+                <TextField
+                  label="Standard hours / week"
+                  size="small"
+                  type="number"
+                  inputProps={{ min: 0, step: 0.25 }}
+                  value={standardHoursInput}
+                  onChange={(event) => {
+                    setStandardHoursInput(event.target.value);
+                    if (standardHoursError) setStandardHoursError('');
+                  }}
+                  helperText={standardHoursError || ' '}
+                  error={Boolean(standardHoursError)}
+                  disabled={standardHoursLoading}
+                />
+                <Button
+                  variant="contained"
+                  onClick={handleStandardHoursSave}
+                  disabled={standardHoursLoading || updateStandardHoursMutation.isPending}
+                >
+                  Save
+                </Button>
+              </Box>
           </Paper>
 
            <Paper sx={{ mb: 3 }}>
