@@ -8,10 +8,12 @@ import { GetUser } from '../auth/decorators/get-user.decorator'
 import { User } from '../user/entities/user.entity'
 import { ProjectMembersService } from '../project-members/project-members.service'
 import { TimeAssignmentsService } from './time-assignments.service'
+import { TimeEntriesService } from '../time-entries/time-entries.service'
 import { CreateTimeAssignmentDto } from './dto/create-time-assignment.dto'
 import { UpdateTimeAssignmentDto } from './dto/update-time-assignment.dto'
 import { TimeAssignmentResponseDto } from './dto/time-assignment-response.dto'
 import { TimeAssignmentWeeklySummaryDto } from './dto/time-assignment-weekly-summary.dto'
+import { TimeAssignmentTeamworkCumulativeDto } from './dto/time-assignment-teamwork-cumulative.dto'
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -21,6 +23,7 @@ export class AdminTimeAssignmentsController {
   constructor(
     private readonly timeAssignmentsService: TimeAssignmentsService,
     private readonly projectMembersService: ProjectMembersService,
+    private readonly timeEntriesService: TimeEntriesService,
   ) {}
 
   @Post('projects/:projectId/time-assignments')
@@ -77,6 +80,26 @@ export class AdminTimeAssignmentsController {
     const summary = await this.timeAssignmentsService.getWeeklySummary(weekStart, weeksCount)
     return summary.map(item =>
       plainToInstance(TimeAssignmentWeeklySummaryDto, item, { excludeExtraneousValues: true }),
+    )
+  }
+
+  @Get('time-assignments/teamwork-cumulative')
+  @Roles(Role.Admin)
+  async teamworkCumulative(
+    @Query('weekStart') weekStart: string,
+    @GetUser() user: User,
+  ): Promise<TimeAssignmentTeamworkCumulativeDto[]> {
+    if (!weekStart) {
+      throw new BadRequestException('weekStart is required')
+    }
+
+    if (user.role !== Role.Admin) {
+      throw new ForbiddenException('Not allowed to view teamwork summary')
+    }
+
+    const summary = await this.timeEntriesService.getCumulativeTeamworkHours(weekStart)
+    return summary.map(item =>
+      plainToInstance(TimeAssignmentTeamworkCumulativeDto, item, { excludeExtraneousValues: true }),
     )
   }
 
