@@ -62,7 +62,12 @@ export const UserDetail = () => {
     mutationFn: (hours: number) => api.put<StandardHoursResponse>(`/admin/users/${userId}/standard-hours`, { hours }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['standard-hours', userId] });
-    }
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message;
+      const formattedMessage = Array.isArray(message) ? message.join(', ') : message;
+      setStandardHoursError(formattedMessage || 'Failed to save standard hours');
+    },
   });
 
   useEffect(() => {
@@ -139,8 +144,9 @@ export const UserDetail = () => {
   const handleStandardHoursSave = () => {
     const trimmed = standardHoursInput.trim();
     const parsed = Number(trimmed);
-    if (!trimmed || Number.isNaN(parsed) || parsed < 0) {
-      setStandardHoursError('Enter a valid non-negative number');
+    const decimalPart = trimmed.split('.')[1];
+    if (!trimmed || Number.isNaN(parsed) || parsed < 0 || (decimalPart && decimalPart.length > 2)) {
+      setStandardHoursError('Enter a valid non-negative number with up to 2 decimals');
       return;
     }
     setStandardHoursError('');
