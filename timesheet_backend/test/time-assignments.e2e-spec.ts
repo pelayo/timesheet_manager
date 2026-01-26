@@ -9,6 +9,8 @@ import { Role } from '../src/user/entities/role.enum'
 import { Project } from '../src/projects/entities/project.entity'
 import { ProjectMember, ProjectRole } from '../src/project-members/entities/project-member.entity'
 import { TimeAssignment } from '../src/time-assignments/entities/time-assignment.entity'
+import { Task, TaskStatus } from '../src/tasks/entities/task.entity'
+import { TimeEntry } from '../src/time-entries/entities/time-entry.entity'
 
 describe('Time Assignments (e2e)', () => {
   let app: INestApplication
@@ -17,6 +19,8 @@ describe('Time Assignments (e2e)', () => {
   let projectRepository: Repository<Project>
   let memberRepository: Repository<ProjectMember>
   let timeAssignmentRepository: Repository<TimeAssignment>
+  let taskRepository: Repository<Task>
+  let timeEntryRepository: Repository<TimeEntry>
 
   let admin: User
   let pmLead: User
@@ -47,9 +51,13 @@ describe('Time Assignments (e2e)', () => {
     projectRepository = app.get<Repository<Project>>(getRepositoryToken(Project))
     memberRepository = app.get<Repository<ProjectMember>>(getRepositoryToken(ProjectMember))
     timeAssignmentRepository = app.get<Repository<TimeAssignment>>(getRepositoryToken(TimeAssignment))
+    taskRepository = app.get<Repository<Task>>(getRepositoryToken(Task))
+    timeEntryRepository = app.get<Repository<TimeEntry>>(getRepositoryToken(TimeEntry))
   })
 
   beforeEach(async () => {
+    await timeEntryRepository.clear()
+    await taskRepository.clear()
     await timeAssignmentRepository.clear()
     await memberRepository.clear()
     await projectRepository.clear()
@@ -147,5 +155,60 @@ describe('Time Assignments (e2e)', () => {
       .get(`/admin/projects/${project.id}/time-assignments`)
       .set('Authorization', `Bearer ${userToken}`)
       .expect(403)
+  })
+
+  it('returns cumulative teamwork hours before forecast weeks', async () => {
+    const task = await taskRepository.save({
+      projectId: project.id,
+      name: 'Task A',
+      description: 'Task A',
+      teamworkId: 'tw-task-1',
+      status: TaskStatus.OPEN,
+    })
+
+    await timeEntryRepository.save([
+      {
+        userId: regularUser.id,
+        taskId: task.id,
+        workDate: '2026-01-15',
+        minutes: 120,
+        teamworkId: 'tw-entry-1',
+      },
+      {
+        userId: regularUser.id,
+        taskId: task.id,
+        workDate: '2026-02-01',
+        minutes: 60,
+        teamworkId: 'tw-entry-2',
+      },
+      {
+        userId: regularUser.id,
+        taskId: task.id,
+        workDate: '2026-02-02',
+        minutes: 60,
+        teamworkId: 'tw-entry-3',
+      },
+      {
+        userId: regularUser.id,
+        taskId: task.id,
+        workDate: '2026-01-20',
+        minutes: 90,
+        teamworkId: null,
+      },
+    ])
+
+    const res = await request(httpServer)
+      .get('/admin/time-assignments/teamwork-cumulative?weekStart=2026-02-02')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200)
+
+    expect(res.body).toHaveLength(1)
+    expect(res.body[0]).toMatchObject({
+      userId: regularUser.id,
+      userEmail: regularUser.email,
+      projectId: project.id,
+      projectName: project.name,
+    })
+    expect(res.body[0].hours).toBeCloseTo(3, 2)
   })
 })

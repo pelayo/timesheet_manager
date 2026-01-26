@@ -4,9 +4,10 @@ import { TimeAssignmentsService } from './time-assignments.service'
 import { TimeAssignment } from './entities/time-assignment.entity'
 import { AdminTimeAssignmentsController } from './admin-time-assignments.controller'
 import { ProjectMembersModule } from '../project-members/project-members.module'
+import { TimeEntriesModule } from '../time-entries/time-entries.module'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TimeAssignment]), ProjectMembersModule],
+  imports: [TypeOrmModule.forFeature([TimeAssignment]), ProjectMembersModule, TimeEntriesModule],
   controllers: [AdminTimeAssignmentsController],
   providers: [TimeAssignmentsService],
 })

@@ -38,6 +38,14 @@ interface AssignmentSummary {
   hours: number
 }
 
+interface CumulativeTeamworkSummary {
+  userId: string
+  userEmail: string
+  projectId: string
+  projectName: string
+  hours: number
+}
+
 const WEEKS_PER_PAGE = 12
 
 export const GlobalTimeAssignments = () => {
@@ -45,6 +53,15 @@ export const GlobalTimeAssignments = () => {
     startOfWeek(new Date(), { weekStartsOn: 1 }),
   )
   const weekStartStr = format(currentWeek, 'yyyy-MM-dd')
+
+  const { data: me, isLoading: meLoading } = useQuery({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const res = await api.get<User>('/user/me')
+      return res.data
+    },
+    retry: false,
+  })
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['users', 'all'],
@@ -66,6 +83,21 @@ export const GlobalTimeAssignments = () => {
     }
   })
 
+  const showCumulative = me?.role === 'admin'
+
+  const { data: cumulativeSummary, isLoading: cumulativeLoading } = useQuery({
+    queryKey: ['time-assignments-teamwork-cumulative', weekStartStr],
+    enabled: showCumulative,
+    queryFn: async () => {
+      const params = new URLSearchParams({ weekStart: weekStartStr })
+      const res = await api.get<CumulativeTeamworkSummary[]>(
+        '/admin/time-assignments/teamwork-cumulative',
+        { params },
+      )
+      return res.data
+    },
+  })
+
   const summaryMap = useMemo(() => {
     const map = new Map<string, AssignmentSummary[]>()
     summary?.forEach((item) => {
@@ -79,11 +111,24 @@ export const GlobalTimeAssignments = () => {
     return map
   }, [summary])
 
+  const cumulativeMap = useMemo(() => {
+    const map = new Map<string, CumulativeTeamworkSummary[]>()
+    cumulativeSummary?.forEach((item) => {
+      const existing = map.get(item.userId) ?? []
+      map.set(item.userId, [...existing, item])
+    })
+    return map
+  }, [cumulativeSummary])
+
   const users = useMemo(() => {
     const baseUsers = usersData?.items ?? []
     const summaryUsers = new Map<string, User>()
     summary?.forEach((item) => {
       summaryUsers.set(item.userId, { id: item.userId, email: item.userEmail, role: 'user' })
+    })
+    const cumulativeUsers = new Map<string, User>()
+    cumulativeSummary?.forEach((item) => {
+      cumulativeUsers.set(item.userId, { id: item.userId, email: item.userEmail, role: 'user' })
     })
 
     const combined = new Map<string, User>()
@@ -91,11 +136,14 @@ export const GlobalTimeAssignments = () => {
     summaryUsers.forEach((user, id) => {
       if (!combined.has(id)) combined.set(id, user)
     })
+    cumulativeUsers.forEach((user, id) => {
+      if (!combined.has(id)) combined.set(id, user)
+    })
 
     return Array.from(combined.values()).filter(
-      (user) => user.role === 'user' || summaryUsers.has(user.id),
+      (user) => user.role === 'user' || summaryUsers.has(user.id) || cumulativeUsers.has(user.id),
     )
-  }, [usersData, summary])
+  }, [usersData, summary, cumulativeSummary])
 
   const weeks = useMemo(
     () => Array.from({ length: WEEKS_PER_PAGE }, (_, index) => addWeeks(currentWeek, index)),
@@ -105,7 +153,7 @@ export const GlobalTimeAssignments = () => {
   const handlePrev = () => setCurrentWeek((prev) => addWeeks(prev, -WEEKS_PER_PAGE))
   const handleNext = () => setCurrentWeek((prev) => addWeeks(prev, WEEKS_PER_PAGE))
 
-  if (usersLoading || summaryLoading) {
+  if (meLoading || usersLoading || summaryLoading || (showCumulative && cumulativeLoading)) {
     return <CircularProgress />
   }
 
@@ -127,6 +175,11 @@ export const GlobalTimeAssignments = () => {
           <TableHead>
             <TableRow>
               <TableCell>User</TableCell>
+              {showCumulative && (
+                <TableCell align="center">
+                  Teamwork to date
+                </TableCell>
+              )}
               {weeks.map((week) => (
                 <TableCell key={week.toISOString()} align="center">
                   {format(week, 'MMM d')}
@@ -138,6 +191,21 @@ export const GlobalTimeAssignments = () => {
             {users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.email}</TableCell>
+                {showCumulative && (
+                  <TableCell align="center" sx={{ minWidth: 180 }}>
+                    {(cumulativeMap.get(user.id) ?? []).length === 0
+                      ? ''
+                      : (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          {(cumulativeMap.get(user.id) ?? []).map(item => (
+                            <Typography key={`${item.projectId}-${item.projectName}`} variant="caption">
+                              {item.projectName} - {item.hours.toFixed(2)}
+                            </Typography>
+                          ))}
+                        </Box>
+                      )}
+                  </TableCell>
+                )}
                 {weeks.map((week) => {
                   const weekStart = format(week, 'yyyy-MM-dd')
                   const items = summaryMap.get(`${user.id}:${weekStart}`) ?? []
@@ -161,7 +229,7 @@ export const GlobalTimeAssignments = () => {
             ))}
             {users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={WEEKS_PER_PAGE + 1} align="center">
+                <TableCell colSpan={WEEKS_PER_PAGE + 1 + (showCumulative ? 1 : 0)} align="center">
                   No assignments found
                 </TableCell>
               </TableRow>
