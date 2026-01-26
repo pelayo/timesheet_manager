@@ -18,6 +18,7 @@ interface Project {
   description: string;
   isArchived: boolean;
   isGlobal: boolean;
+  isChargeable: boolean;
 }
 
 interface ProjectsResponse {
@@ -81,6 +82,7 @@ export const ProjectsList = () => {
       setValue('description', project.description)
       setValue('isArchived', project.isArchived)
       setValue('isGlobal', project.isGlobal)
+      setValue('isChargeable', project.isChargeable)
     } else {
       setEditingProject(null)
       reset()
@@ -149,6 +151,7 @@ export const ProjectsList = () => {
               <TableCell>Code</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Type</TableCell>
+              <TableCell>Chargeable</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -159,6 +162,7 @@ export const ProjectsList = () => {
                 <TableCell>{project.code}</TableCell>
                 <TableCell>{project.isArchived ? 'Archived' : 'Active'}</TableCell>
                 <TableCell>{project.isGlobal ? 'Global' : 'Assigned'}</TableCell>
+                <TableCell>{project.isChargeable ? 'Yes' : 'No'}</TableCell>
                 <TableCell align="right">
                   <Button onClick={() => navigate(`/projects/${project.id}`)} sx={{ mr: 1 }}>Manage</Button>
                   <Button onClick={() => handleOpen(project)}>Edit</Button>
@@ -167,7 +171,7 @@ export const ProjectsList = () => {
             ))}
             {projects.length === 0 && (
                <TableRow>
-                 <TableCell colSpan={5} align="center">No projects found</TableCell>
+                 <TableCell colSpan={6} align="center">No projects found</TableCell>
                </TableRow>
             )}
           </TableBody>
@@ -211,6 +215,10 @@ export const ProjectsList = () => {
             <FormControlLabel
               control={<Checkbox defaultChecked={editingProject ? editingProject.isGlobal : false} {...register('isGlobal')} />}
               label="Global (Available to everyone)"
+            />
+            <FormControlLabel
+              control={<Checkbox defaultChecked={editingProject ? editingProject.isChargeable : true} {...register('isChargeable')} />}
+              label="Chargeable"
             />
             {editingProject && (
               <FormControlLabel

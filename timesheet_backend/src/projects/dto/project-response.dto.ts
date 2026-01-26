@@ -20,6 +20,9 @@ export class ProjectResponseDto {
   isGlobal: boolean;
 
   @Expose()
+  isChargeable: boolean;
+
+  @Expose()
   createdAt: Date;
 
   @Expose()
