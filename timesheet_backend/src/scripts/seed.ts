@@ -7,6 +7,7 @@ import { TasksService } from '../tasks/tasks.service'
 import { ProjectMembersService } from '../project-members/project-members.service'
 import { TimeEntriesService } from '../time-entries/time-entries.service'
 import { TimeAssignmentsService } from '../time-assignments/time-assignments.service'
+import { ProfilesService } from '../profiles/profiles.service'
 import { Role } from '../user/entities/role.enum'
 import { User } from '../user/entities/user.entity'
 import { ProjectRole } from '../project-members/entities/project-member.entity'
@@ -31,8 +32,52 @@ async function bootstrap() {
   const membersService = await app.resolve(ProjectMembersService, contextId)
   const timeEntriesService = await app.resolve(TimeEntriesService, contextId)
   const timeAssignmentsService = await app.resolve(TimeAssignmentsService, contextId)
+  const profilesService = await app.resolve(ProfilesService, contextId)
 
   console.log('Seeding data...')
+
+  const profileSeeds = [
+    {
+      name: 'Software Engineer',
+      discipline: 'Engineering',
+      level: 'Junior',
+      costPerHour: 45,
+      active: true,
+    },
+    {
+      name: 'Software Engineer',
+      discipline: 'Engineering',
+      level: 'Senior',
+      costPerHour: 90,
+      active: true,
+    },
+    {
+      name: 'Product Designer',
+      discipline: 'Design',
+      level: 'Mid',
+      costPerHour: 70,
+      active: true,
+    },
+  ]
+
+  const profileKey = (profile: { name: string; discipline: string; level: string }) =>
+    `${profile.name.toLowerCase()}|${profile.discipline.toLowerCase()}|${profile.level.toLowerCase()}`
+
+  const existingProfiles = await profilesService.findAll()
+  const profilesByKey = new Map(
+    existingProfiles.map((profile) => [profileKey(profile), profile]),
+  )
+
+  for (const seed of profileSeeds) {
+    const key = profileKey(seed)
+    if (profilesByKey.has(key)) {
+      console.log(`Profile exists: ${seed.name} (${seed.discipline} ${seed.level})`)
+      continue
+    }
+    const created = await profilesService.create(seed)
+    profilesByKey.set(key, created)
+    console.log(`Created Profile: ${created.name} (${created.discipline} ${created.level})`)
+  }
 
   // 1. Create Users
   let adminUser: User;
@@ -59,6 +104,23 @@ async function bootstrap() {
   } catch (e) {
       console.log('Worker probably exists')
       workerUser = (await userService.findOneByEmail('worker@example.com'))!
+  }
+
+  const defaultProfileKey = profileKey(profileSeeds[1])
+  const defaultProfile = profilesByKey.get(defaultProfileKey)
+
+  if (defaultProfile) {
+    try {
+      if (!adminUser.profileId) {
+        await userService.updateUser(adminUser.id, { profileId: defaultProfile.id })
+      }
+      if (!workerUser.profileId) {
+        await userService.updateUser(workerUser.id, { profileId: defaultProfile.id })
+      }
+      console.log('Assigned default profile to seeded users when missing')
+    } catch (e) {
+      console.log('Profile assignment skipped')
+    }
   }
 
   // 2. Create Projects
