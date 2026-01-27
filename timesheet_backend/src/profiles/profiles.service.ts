@@ -34,4 +34,9 @@ export class ProfilesService {
     const updated = Object.assign(profile, dto)
     return this.profilesRepository.save(updated)
   }
+
+  async remove(id: string): Promise<void> {
+    const profile = await this.findOne(id)
+    await this.profilesRepository.remove(profile)
+  }
 }

@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Delete,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
@@ -54,5 +55,10 @@ export class AdminProfilesController {
   ): Promise<ProfileResponseDto> {
     const profile = await this.profilesService.update(id, dto)
     return plainToInstance(ProfileResponseDto, profile, { excludeExtraneousValues: true })
+  }
+
+  @Delete(':id')
+  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.profilesService.remove(id)
   }
 }
