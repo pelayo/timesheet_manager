@@ -17,6 +17,7 @@ import { plainToInstance } from 'class-transformer'
 import { UserService } from './user.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto'
 import { UserResponseDto } from './dto/user-response.dto'
 import { Roles } from '../auth/roles.decorator'
 import { RolesGuard } from '../auth/roles.guard'
@@ -65,6 +66,16 @@ export class AdminUserController {
     @Body() dto: UpdateUserDto,
   ): Promise<UserResponseDto> {
     const user = await this.userService.updateUser(id, dto)
+    return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true })
+  }
+
+  @Patch(':id/profile')
+  @Roles(Role.Admin)
+  async updateProfile(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserProfileDto,
+  ): Promise<UserResponseDto> {
+    const user = await this.userService.updateUserProfile(id, dto)
     return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true })
   }
 

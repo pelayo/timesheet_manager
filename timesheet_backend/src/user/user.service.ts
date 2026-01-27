@@ -12,6 +12,7 @@ import { User } from './entities/user.entity'
 import { Role } from './entities/role.enum'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto'
 import { CurrentUserService } from '../common/current-user.service'
 import { hash } from 'bcryptjs'
 import { Profile } from '../profiles/entities/profile.entity'
@@ -148,6 +149,10 @@ export class UserService {
       updated.password = await this.hashPassword(dto.password)
     }
     return this.userRepository.save(updated)
+  }
+
+  async updateUserProfile(id: string, dto: UpdateUserProfileDto): Promise<User> {
+    return this.updateUser(id, { profileId: dto.profileId })
   }
 
   async deleteUser(id: string): Promise<void> {
