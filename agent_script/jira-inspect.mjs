@@ -35,7 +35,7 @@ loadEnvFile(path.join(projectDir, '.env.agent'))
 const baseUrl = process.env.JIRA_URL || process.env.JIRA_BASE_URL
 const email = process.env.JIRA_EMAIL
 const apiToken = process.env.JIRA_TOKEN || process.env.JIRA_API_TOKEN
-const boardId = process.env.JIRA_BOARD_ID || '1154'
+const boardId = process.env.JIRA_PANEL_ID || '1253'
 
 if (!baseUrl || !email || !apiToken) {
   console.error('Missing Jira config. Ensure `.env.agent` has JIRA_URL, JIRA_EMAIL, JIRA_TOKEN.')

@@ -16,7 +16,7 @@ Objetivo: el script (no tú) coge una tarea de Jira, la mueve a `Doing`, ejecuta
    - `JIRA_DOING_STATUS` (ej. `Doing`)
    - `JIRA_DEVELOP_STATUS` (ej. `DEVELOPED`)
    - `JIRA_DONE_STATUS` (ej. `Done`)
-   - `JIRA_BOARD_ID` (ej. `1253`)
+   - `JIRA_PANEL_ID` (ej. `1253`)
 
 Recomendación para “tareas para mí”:
 - Asigna la tarea al mismo usuario del token.
