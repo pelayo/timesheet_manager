@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UserService } from './user.service';
-import { User } from './entities/user.entity';
-import { Role } from './entities/role.enum';
-import { CurrentUserService } from '../common/current-user.service';
+import { User } from './entities/user.entity'
+import { Role } from './entities/role.enum'
+import { CurrentUserService } from '../common/current-user.service'
 import { ConflictException, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common'
 import { compare } from 'bcryptjs'
+import { Profile } from '../profiles/entities/profile.entity'
 
 const mockUserRepository = {
   create: jest.fn(),
@@ -13,11 +14,15 @@ const mockUserRepository = {
   findOne: jest.fn(),
   find: jest.fn(),
   delete: jest.fn(),
-};
+}
+
+const mockProfileRepository = {
+  findOne: jest.fn(),
+}
 
 const mockCurrentUserService = {
   get: jest.fn(),
-};
+}
 
 describe('UserService', () => {
   let service: UserService;
@@ -29,6 +34,10 @@ describe('UserService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: mockUserRepository,
+        },
+        {
+          provide: getRepositoryToken(Profile),
+          useValue: mockProfileRepository,
         },
         {
           provide: CurrentUserService,
