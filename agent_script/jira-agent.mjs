@@ -38,8 +38,8 @@ loadEnvFile(path.join(projectDir, '.env.agent'))
 const projectKey = process.env.JIRA_PROJECT_KEY || 'CT'
 const todoStatus = process.env.JIRA_TODO_STATUS || ''
 const defaultJql = todoStatus
-  ? `project=${projectKey} AND status="${todoStatus}" AND assignee=currentUser() ORDER BY created DESC`
-  : `project=${projectKey} AND statusCategory=ToDo AND assignee=currentUser() ORDER BY created DESC`
+  ? `project=${projectKey} AND status="${todoStatus}" ORDER BY created DESC`
+  : `project=${projectKey} AND statusCategory=ToDo ORDER BY created DESC`
 
 const config = {
   baseUrl: process.env.JIRA_URL || process.env.JIRA_BASE_URL,

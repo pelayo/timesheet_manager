@@ -19,8 +19,8 @@ Objetivo: el script (no tú) coge una tarea de Jira, la mueve a `Doing`, ejecuta
    - `JIRA_PANEL_ID` (ej. `1253`)
 
 Recomendación para “tareas para mí”:
-- Asigna la tarea al mismo usuario del token.
-- Deja `JIRA_JQL=... assignee=currentUser() ...` o usa `JIRA_ISSUE_KEY`.
+- Si quieres filtrar por usuario, añade `assignee=currentUser()` en `JIRA_JQL`.
+- Si no, deja el JQL por defecto (sin assignee) o usa `JIRA_ISSUE_KEY`.
 
 ## 2) (Opcional) Crear PR automáticamente
 
