@@ -197,10 +197,10 @@ function buildCodexPrompt(issue) {
     'Descripción (texto plano):',
     descriptionText || '(sin descripción)',
     '',
-    'Repositorio objetivo: este proyecto Symfony+React en `symfonyreact/`.',
+    'Repositorio objetivo: este proyecto con frontend React (Vite) y backend NestJS.',
     'Restricciones:',
-    '- No usar base de datos: persistencia en `var/data/shopping-list.json`.',
-    '- Mantener el frontend simple (React CDN en `public/app.js`).',
+    '- Sigue las convenciones del repo (AGENTS.md).',
+    '- Mantén los cambios mínimos y enfocados.',
     '',
     'Objetivo:',
     '1) Implementa la tarea de Jira con cambios mínimos.',
@@ -483,7 +483,7 @@ async function main() {
     console.log('No branch changes vs base. Not creating PR and not transitioning to Done.')
     if (!config.runCodex) {
       console.log('RUN_CODEX=0: not running Codex automatically.')
-      console.log('Suggested command (from `symfonyreact/`):')
+      console.log('Suggested command (from repo root):')
       console.log('')
       console.log(
         `  codex exec --cd "${projectDir}" --skip-git-repo-check -s danger-full-access -c ask_for_approval="${config.codexAskForApproval}" ${JSON.stringify(prompt)}`

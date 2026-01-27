@@ -1,6 +1,6 @@
 # Jira Agent (trivial)
 
-Objetivo: el script (no tú) coge una tarea de Jira, la mueve a `Doing`, ejecuta Codex sobre este repo con un prompt basado en la tarea, crea un PR, y finalmente la mueve a `Done` (o el estado configurado).
+Objetivo: el script (no tú) coge una tarea de Jira, la mueve a `Doing`, ejecuta Codex sobre este repo (frontend React/Vite + backend NestJS) con un prompt basado en la tarea, crea un PR, y finalmente la mueve a `Done` (o el estado configurado).
 
 ## 1) Configurar credenciales
 
