@@ -17,11 +17,15 @@ test.describe('Admin Stats', () => {
     
     // Create Projects & Tasks & Assign
     for (const pName of [p1Name, p2Name]) {
-        await adminPage.click('text=Projects')
+        await adminPage.getByRole('button', { name: 'Projects', exact: true }).click()
+        await adminPage.waitForURL('/projects')
         await adminPage.click('text=Add Project')
         await adminPage.fill('input[name="name"]', pName)
         await adminPage.click('button:has-text("Save")')
-        await adminPage.getByRole('textbox', { name: 'Search Projects' }).fill(pName)
+        await expect(adminPage.getByRole('dialog')).not.toBeVisible()
+        const projectSearch = adminPage.getByRole('textbox', { name: 'Search Projects' })
+        await expect(projectSearch).toBeVisible()
+        await projectSearch.fill(pName)
         await adminPage.getByRole('row', { name: pName }).getByText('Manage').click()
         await adminPage.click('text=Add Task')
         await adminPage.fill('input[name="name"]', 'Task 1')
@@ -79,7 +83,7 @@ test.describe('Admin Stats', () => {
         await verifyPage.click('button[type="submit"]')
     }
 
-    await verifyPage.click('text=Stats')
+    await verifyPage.getByRole('button', { name: 'Stats' }).click()
     await expect(verifyPage).toHaveURL('/stats')
 
     // Check Data Loaded (Not empty)

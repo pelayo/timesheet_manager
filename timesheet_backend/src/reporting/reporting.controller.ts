@@ -1,9 +1,19 @@
-import { Body, Controller, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import * as express from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ReportingService } from './reporting.service';
 import { ReportFilterDto } from './dto/report-filter.dto';
 import { StatsFilterDto } from './dto/stats-filter.dto';
+import { TeamHoursFilterDto } from './dto/team-hours-filter.dto';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../user/entities/role.enum';
@@ -21,20 +31,20 @@ export class ReportingController {
 
   @Get('project/:projectId/stats')
   async getProjectStats(
-      @Param('projectId') projectId: string,
-      @Query('from') from?: string,
-      @Query('to') to?: string,
-      @Query('groupBy') groupBy?: string,
+    @Param('projectId') projectId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('groupBy') groupBy?: string,
   ) {
     return this.reportingService.getProjectStats(projectId, from, to, groupBy);
   }
 
   @Get('worker/:userId/stats')
   async getWorkerStats(
-      @Param('userId') userId: string,
-      @Query('from') from?: string,
-      @Query('to') to?: string,
-      @Query('groupBy') groupBy?: string,
+    @Param('userId') userId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('groupBy') groupBy?: string,
   ) {
     return this.reportingService.getWorkerStats(userId, from, to, groupBy);
   }
@@ -42,5 +52,15 @@ export class ReportingController {
   @Get('time-entries')
   async getReport(@Query() filter: ReportFilterDto) {
     return this.reportingService.getReport(filter);
+  }
+
+  @Get('chargeable-summary')
+  async getChargeableSummary(@Query() filter: ReportFilterDto) {
+    return this.reportingService.getChargeableSummary(filter);
+  }
+
+  @Get('team-hours')
+  async getTeamHours(@Query() filter: TeamHoursFilterDto) {
+    return this.reportingService.getTeamHoursByLead(filter);
   }
 }

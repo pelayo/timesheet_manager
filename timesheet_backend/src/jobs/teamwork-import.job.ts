@@ -11,6 +11,7 @@ import { TimeEntriesService } from '../time-entries/time-entries.service'
 import { Role } from '../user/entities/role.enum'
 import { ProjectRole } from '../project-members/entities/project-member.entity'
 import { TaskStatus } from '../tasks/entities/task.entity'
+import { DEFAULT_TEAMWORK_TASK_NAME } from './teamwork-import.helpers'
 
 const asError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error))
@@ -104,6 +105,7 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
     const userMap = new Map<string, string>() // TW Person ID -> Local User ID
     const projectMap = new Map<string, string>() // TW Project ID -> Local Project ID
     const taskMap = new Map<string, string>() // TW Task ID -> Local Task ID
+    const defaultTaskMap = new Map<string, string>() // Project ID -> Default Task ID
 
     this.logger.info(`[Job ${jobId}] 🚀 Starting migration from ${baseURL}...`)
 
@@ -227,6 +229,23 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
     let page = 1
     let hasMore = true
     let count = 0
+    let recoveredMissingTaskCount = 0
+
+    const getDefaultTaskId = async (projectId: string) => {
+      const cached = defaultTaskMap.get(projectId)
+      if (cached) return cached
+
+      const existingTasks = await this.tasksService.findAll(projectId)
+      let task = existingTasks.find(item => item.name === DEFAULT_TEAMWORK_TASK_NAME) ?? null
+      if (!task) {
+        task = await this.tasksService.create(projectId, {
+          name: DEFAULT_TEAMWORK_TASK_NAME,
+        })
+      }
+
+      defaultTaskMap.set(projectId, task.id)
+      return task.id
+    }
 
     while (hasMore) {
       try {
@@ -250,10 +269,17 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
           const teamworkId = String(entry.id)
           const personId = String(entry['person-id'])
           const taskId = String(entry['todo-item-id'])
+          const projectId = entry['project-id'] ? String(entry['project-id']) : null
 
           const localUserId = userMap.get(personId)
-          const localTaskId = taskMap.get(taskId)
+          const localProjectId = projectId ? projectMap.get(projectId) : undefined
+          let localTaskId = taskMap.get(taskId)
           
+          if (!localTaskId && localProjectId) {
+            localTaskId = await getDefaultTaskId(localProjectId)
+            recoveredMissingTaskCount++
+          }
+
           if (!localUserId || !localTaskId) {
             continue
           }
@@ -338,7 +364,11 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
       }
     }
 
-    this.logger.info(`[Job ${jobId}] Migration Complete! Imported ${count} time entries.`)
-    return { message: `Migration Complete! Imported ${count} time entries.` }
+    this.logger.info(
+      `[Job ${jobId}] Migration Complete! Imported ${count} time entries. Recovered ${recoveredMissingTaskCount} entries without tasks.`,
+    )
+    return {
+      message: `Migration Complete! Imported ${count} time entries. Recovered ${recoveredMissingTaskCount} entries without tasks.`,
+    }
   }
 }

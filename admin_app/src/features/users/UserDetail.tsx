@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Box, Typography, Paper, Button, CircularProgress,
-  ToggleButtonGroup, ToggleButton, TextField
+  ToggleButtonGroup, ToggleButton, TextField, MenuItem
 } from '@mui/material';
 import { eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, isSameDay, isSameWeek, isSameMonth } from 'date-fns';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -14,11 +14,30 @@ interface User {
   id: string;
   email: string;
   role: string;
+  profileId?: string | null
 }
 
 interface StandardHoursResponse {
   userId: string;
   hours: number | null;
+}
+
+interface Profile {
+  id: string
+  name: string
+  discipline: string
+  level: string
+  costPerHour: number
+  active: boolean
+}
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (!error || typeof error !== 'object') return fallback
+  const response = (error as { response?: { data?: { message?: string | string[] } } }).response
+  const message = response?.data?.message
+  if (Array.isArray(message)) return message.join(', ')
+  if (typeof message === 'string') return message
+  return fallback
 }
 
 export const UserDetail = () => {
@@ -28,6 +47,8 @@ export const UserDetail = () => {
   const [groupBy, setGroupBy] = useState('day');
   const [standardHoursInput, setStandardHoursInput] = useState('');
   const [standardHoursError, setStandardHoursError] = useState('');
+  const [profileInput, setProfileInput] = useState('')
+  const [profileError, setProfileError] = useState('')
   
   const [filters, setFilters] = useState(() => {
       const today = new Date();
@@ -62,8 +83,30 @@ export const UserDetail = () => {
     mutationFn: (hours: number) => api.put<StandardHoursResponse>(`/admin/users/${userId}/standard-hours`, { hours }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['standard-hours', userId] });
-    }
+    },
+    onError: (error: unknown) => {
+      setStandardHoursError(getErrorMessage(error, 'Failed to save standard hours'))
+    },
   });
+
+  const { data: profiles } = useQuery({
+    queryKey: ['profiles'],
+    queryFn: async () => {
+      const res = await api.get<Profile[]>('/admin/profiles')
+      return res.data
+    },
+  })
+
+  const updateProfileMutation = useMutation({
+    mutationFn: (profileId: string | null) =>
+      api.patch<User>(`/admin/users/${userId}`, { profileId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', userId] })
+    },
+    onError: (error: unknown) => {
+      setProfileError(getErrorMessage(error, 'Failed to save profile'))
+    },
+  })
 
   useEffect(() => {
     if (!standardHours) return;
@@ -73,6 +116,11 @@ export const UserDetail = () => {
     }
     setStandardHoursInput(String(standardHours.hours));
   }, [standardHours]);
+
+  useEffect(() => {
+    if (!user) return
+    setProfileInput(user.profileId || '')
+  }, [user])
 
    const { data: stats } = useQuery({
     queryKey: ['worker-stats', userId, filters, groupBy],
@@ -139,13 +187,20 @@ export const UserDetail = () => {
   const handleStandardHoursSave = () => {
     const trimmed = standardHoursInput.trim();
     const parsed = Number(trimmed);
-    if (!trimmed || Number.isNaN(parsed) || parsed < 0) {
-      setStandardHoursError('Enter a valid non-negative number');
+    const decimalPart = trimmed.split('.')[1];
+    if (!trimmed || Number.isNaN(parsed) || parsed < 0 || (decimalPart && decimalPart.length > 2)) {
+      setStandardHoursError('Enter a valid non-negative number with up to 2 decimals');
       return;
     }
     setStandardHoursError('');
     updateStandardHoursMutation.mutate(parsed);
   };
+
+  const handleProfileSave = () => {
+    const value = profileInput.trim()
+    setProfileError('')
+    updateProfileMutation.mutate(value ? value : null)
+  }
 
   return (
       <Box>
@@ -176,6 +231,33 @@ export const UserDetail = () => {
                   disabled={standardHoursLoading || updateStandardHoursMutation.isPending}
                 >
                   Save
+                </Button>
+                <TextField
+                  select
+                  label="Profile"
+                  size="small"
+                  value={profileInput}
+                  onChange={(event) => {
+                    setProfileInput(event.target.value)
+                    if (profileError) setProfileError('')
+                  }}
+                  helperText={profileError || ' '}
+                  error={Boolean(profileError)}
+                  sx={{ minWidth: 240 }}
+                >
+                  <MenuItem value="">None</MenuItem>
+                  {profiles?.map((profile) => (
+                    <MenuItem key={profile.id} value={profile.id}>
+                      {profile.name} · {profile.discipline} · {profile.level}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <Button
+                  variant="contained"
+                  onClick={handleProfileSave}
+                  disabled={updateProfileMutation.isPending}
+                >
+                  Save Profile
                 </Button>
               </Box>
           </Paper>

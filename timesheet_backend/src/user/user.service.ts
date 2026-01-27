@@ -12,8 +12,10 @@ import { User } from './entities/user.entity'
 import { Role } from './entities/role.enum'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto'
 import { CurrentUserService } from '../common/current-user.service'
 import { hash } from 'bcryptjs'
+import { Profile } from '../profiles/entities/profile.entity'
 
 const PASSWORD_SALT_ROUNDS = 10
 
@@ -22,6 +24,8 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Profile)
+    private readonly profileRepository: Repository<Profile>,
     private readonly currentUserService: CurrentUserService,
   ) {}
 
@@ -81,18 +85,30 @@ export class UserService {
 
     await this.ensureEmailAvailable(dto.email)
 
+    const normalizedProfileId = typeof dto.profileId === 'string' ? dto.profileId.trim() : dto.profileId
+    if (normalizedProfileId) {
+      await this.ensureProfileExists(normalizedProfileId)
+    }
+
     const user = this.userRepository.create({
       ...dto,
+      profileId: normalizedProfileId ?? null,
       password: await this.hashPassword(dto.password),
     })
     return this.userRepository.save(user)
   }
 
   async createUserForImport(dto: CreateUserDto): Promise<User> {
+    const normalizedProfileId = typeof dto.profileId === 'string' ? dto.profileId.trim() : dto.profileId
+    if (normalizedProfileId) {
+      await this.ensureProfileExists(normalizedProfileId)
+    }
+
     await this.ensureEmailAvailable(dto.email)
 
     const user = this.userRepository.create({
       ...dto,
+      profileId: normalizedProfileId ?? null,
       password: await this.hashPassword(dto.password),
     })
     return this.userRepository.save(user)
@@ -118,11 +134,25 @@ export class UserService {
       await this.ensureEmailAvailable(dto.email)
     }
 
-    const updated = Object.assign(user, dto)
+    const { profileId, ...rest } = dto
+    const normalizedProfileId = typeof profileId === 'string' ? profileId.trim() : profileId
+
+    if (typeof normalizedProfileId !== 'undefined') {
+      if (normalizedProfileId) {
+        await this.ensureProfileExists(normalizedProfileId)
+      }
+      user.profileId = normalizedProfileId ?? null
+    }
+
+    const updated = Object.assign(user, rest)
     if (dto.password) {
       updated.password = await this.hashPassword(dto.password)
     }
     return this.userRepository.save(updated)
+  }
+
+  async updateUserProfile(id: string, dto: UpdateUserProfileDto): Promise<User> {
+    return this.updateUser(id, { profileId: dto.profileId })
   }
 
   async deleteUser(id: string): Promise<void> {
@@ -148,6 +178,13 @@ export class UserService {
     const existing = await this.findOneByEmail(email)
     if (existing) {
       throw new ConflictException('Email already exists')
+    }
+  }
+
+  private async ensureProfileExists(profileId: string) {
+    const profile = await this.profileRepository.findOne({ where: { id: profileId } })
+    if (!profile) {
+      throw new NotFoundException('Profile not found')
     }
   }
 

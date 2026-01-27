@@ -4,6 +4,7 @@ import { plainToInstance } from 'class-transformer';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { UpdateProjectBudgetDto } from './dto/update-project-budget.dto'
 import { ProjectResponseDto } from './dto/project-response.dto';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -71,5 +72,15 @@ export class AdminProjectsController {
   ): Promise<ProjectResponseDto> {
     const project = await this.projectsService.update(id, dto);
     return plainToInstance(ProjectResponseDto, project, { excludeExtraneousValues: true });
+  }
+
+  @Patch(':id/budget')
+  @Roles(Role.Admin)
+  async updateBudget(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateProjectBudgetDto,
+  ): Promise<ProjectResponseDto> {
+    const project = await this.projectsService.updateBudget(id, dto)
+    return plainToInstance(ProjectResponseDto, project, { excludeExtraneousValues: true })
   }
 }

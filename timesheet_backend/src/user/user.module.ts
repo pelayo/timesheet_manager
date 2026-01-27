@@ -9,9 +9,10 @@ import { CurrentUserService } from '../common/current-user.service'
 import { UserImportService } from './user-import.service'
 import { StandardHoursService } from './standard-hours.service'
 import { AdminStandardHoursController } from './admin-standard-hours.controller'
+import { Profile } from '../profiles/entities/profile.entity'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, StandardHours])],
+  imports: [TypeOrmModule.forFeature([User, StandardHours, Profile])],
   providers: [UserService, CurrentUserService, UserImportService, StandardHoursService],
   exports: [UserService, UserImportService],
   controllers: [UserController, AdminUserController, AdminStandardHoursController],

@@ -18,11 +18,23 @@ interface Project {
   description: string;
   isArchived: boolean;
   isGlobal: boolean;
+  isChargeable: boolean;
+  budgetAmount: number
+  budgetCurrency: string
 }
 
 interface ProjectsResponse {
   items: Project[];
   total: number;
+}
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (!error || typeof error !== 'object') return fallback
+  const response = (error as { response?: { data?: { message?: string | string[] } } }).response
+  const message = response?.data?.message
+  if (Array.isArray(message)) return message.join(', ')
+  if (typeof message === 'string') return message
+  return fallback
 }
 
 export const ProjectsList = () => {
@@ -31,7 +43,8 @@ export const ProjectsList = () => {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
-  const { register, handleSubmit, reset, setValue } = useForm()
+  const [formError, setFormError] = useState('')
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm()
   
   // Pagination & Search state
   const [page, setPage] = useState(0)
@@ -59,21 +72,28 @@ export const ProjectsList = () => {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => api.post('/admin/projects', data),
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.refetchQueries({ queryKey: ['projects'] })
       handleClose()
+    },
+    onError: (error: unknown) => {
+      setFormError(getErrorMessage(error, 'Failed to create project'))
     }
   })
 
   const updateMutation = useMutation({
     mutationFn: (data: any) => api.patch(`/admin/projects/${editingProject?.id}`, data),
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.refetchQueries({ queryKey: ['projects'] })
       handleClose()
+    },
+    onError: (error: unknown) => {
+      setFormError(getErrorMessage(error, 'Failed to update project'))
     }
   })
 
   const handleOpen = (project?: Project) => {
+    setFormError('')
     if (project) {
       setEditingProject(project)
       setValue('name', project.name)
@@ -81,9 +101,12 @@ export const ProjectsList = () => {
       setValue('description', project.description)
       setValue('isArchived', project.isArchived)
       setValue('isGlobal', project.isGlobal)
+      setValue('isChargeable', project.isChargeable)
+      setValue('budgetAmount', project.budgetAmount)
+      setValue('budgetCurrency', project.budgetCurrency)
     } else {
       setEditingProject(null)
-      reset()
+      reset({ budgetAmount: 0, budgetCurrency: 'EUR' })
     }
     setOpen(true)
   }
@@ -91,14 +114,22 @@ export const ProjectsList = () => {
   const handleClose = () => {
     setOpen(false)
     setEditingProject(null)
+    setFormError('')
     reset()
   }
 
   const onSubmit = (data: any) => {
+    const payload = {
+      ...data,
+      budgetCurrency: data.budgetCurrency ? String(data.budgetCurrency).toUpperCase() : data.budgetCurrency,
+    }
+    if (Number.isNaN(payload.budgetAmount)) {
+      delete payload.budgetAmount
+    }
     if (editingProject) {
-      updateMutation.mutate(data)
+      updateMutation.mutate(payload)
     } else {
-      createMutation.mutate(data)
+      createMutation.mutate(payload)
     }
   }
 
@@ -149,6 +180,8 @@ export const ProjectsList = () => {
               <TableCell>Code</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Type</TableCell>
+              <TableCell>Chargeable</TableCell>
+              <TableCell>Budget</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -159,6 +192,8 @@ export const ProjectsList = () => {
                 <TableCell>{project.code}</TableCell>
                 <TableCell>{project.isArchived ? 'Archived' : 'Active'}</TableCell>
                 <TableCell>{project.isGlobal ? 'Global' : 'Assigned'}</TableCell>
+                <TableCell>{project.isChargeable ? 'Yes' : 'No'}</TableCell>
+                <TableCell>{project.budgetAmount} {project.budgetCurrency}</TableCell>
                 <TableCell align="right">
                   <Button onClick={() => navigate(`/projects/${project.id}`)} sx={{ mr: 1 }}>Manage</Button>
                   <Button onClick={() => handleOpen(project)}>Edit</Button>
@@ -167,7 +202,7 @@ export const ProjectsList = () => {
             ))}
             {projects.length === 0 && (
                <TableRow>
-                 <TableCell colSpan={5} align="center">No projects found</TableCell>
+                 <TableCell colSpan={7} align="center">No projects found</TableCell>
                </TableRow>
             )}
           </TableBody>
@@ -192,7 +227,9 @@ export const ProjectsList = () => {
               margin="dense"
               label="Project Name"
               fullWidth
-              {...register('name', { required: true })}
+              error={Boolean(errors.name)}
+              helperText={errors.name?.message}
+              {...register('name', { required: 'Project name is required' })}
             />
             <TextField
               margin="dense"
@@ -208,9 +245,36 @@ export const ProjectsList = () => {
               rows={3}
               {...register('description')}
             />
+            <TextField
+              margin="dense"
+              label="Budget Amount"
+              type="number"
+              fullWidth
+              inputProps={{ min: 0, step: 0.01 }}
+              error={Boolean(errors.budgetAmount)}
+              helperText={errors.budgetAmount?.message}
+              {...register('budgetAmount', {
+                valueAsNumber: true,
+                min: { value: 0, message: 'Budget must be 0 or higher' },
+              })}
+            />
+            <TextField
+              margin="dense"
+              label="Budget Currency"
+              fullWidth
+              error={Boolean(errors.budgetCurrency)}
+              helperText={errors.budgetCurrency?.message}
+              {...register('budgetCurrency', {
+                pattern: { value: /^[A-Z]{3}$/, message: 'Use a 3-letter code (e.g. EUR)' },
+              })}
+            />
             <FormControlLabel
               control={<Checkbox defaultChecked={editingProject ? editingProject.isGlobal : false} {...register('isGlobal')} />}
               label="Global (Available to everyone)"
+            />
+            <FormControlLabel
+              control={<Checkbox defaultChecked={editingProject ? editingProject.isChargeable : true} {...register('isChargeable')} />}
+              label="Chargeable"
             />
             {editingProject && (
               <FormControlLabel
@@ -218,10 +282,15 @@ export const ProjectsList = () => {
                 label="Archived"
               />
             )}
+            {formError && (
+              <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                {formError}
+              </Typography>
+            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button type="submit" variant="contained">Save</Button>
+            <Button type="submit" variant="contained" disabled={createMutation.isPending || updateMutation.isPending}>Save</Button>
           </DialogActions>
         </form>
       </Dialog>

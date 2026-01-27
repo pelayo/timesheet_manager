@@ -12,6 +12,7 @@ import { TimeEntriesService } from '../time-entries/time-entries.service'
 import { Role } from '../user/entities/role.enum'
 import { ProjectRole } from '../project-members/entities/project-member.entity'
 import { TaskStatus } from '../tasks/entities/task.entity'
+import { resolveTaskName } from './teamwork-import.helpers'
 
 const asError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error))
@@ -141,6 +142,7 @@ export class TeamworkExcelImportJob extends WorkerHost implements OnModuleInit {
     const userCache = new Map<string, string>()
 
     let count = 0
+    let recoveredMissingTaskCount = 0
 
     for (const rawRow of rows) {
       const row = normalizeRow(rawRow as Record<string, unknown>)
@@ -202,10 +204,9 @@ export class TeamworkExcelImportJob extends WorkerHost implements OnModuleInit {
         }
       }
 
-      const taskNameValue = typeof row['task'] === 'string' ? row['task'].trim() : null
-      if (!taskNameValue) {
-        this.logger.warn({ row }, 'Skipping row without task name')
-        continue
+      const { name: taskNameValue, usedFallback } = resolveTaskName(row['task'])
+      if (usedFallback && !teamworkTaskId) {
+        recoveredMissingTaskCount++
       }
 
       let taskId = teamworkTaskId ? taskCache.get(teamworkTaskId) : undefined
@@ -335,7 +336,11 @@ export class TeamworkExcelImportJob extends WorkerHost implements OnModuleInit {
       }
     }
 
-    this.logger.info(`Excel import complete. Imported ${count} time entries.`)
-    return { message: `Excel import complete. Imported ${count} time entries.` }
+    this.logger.info(
+      `Excel import complete. Imported ${count} time entries. Recovered ${recoveredMissingTaskCount} entries without tasks.`,
+    )
+    return {
+      message: `Excel import complete. Imported ${count} time entries. Recovered ${recoveredMissingTaskCount} entries without tasks.`,
+    }
   }
 }

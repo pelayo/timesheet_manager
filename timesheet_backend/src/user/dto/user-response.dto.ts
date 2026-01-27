@@ -12,6 +12,9 @@ export class UserResponseDto {
   role: Role
 
   @Expose()
+  profileId: string | null
+
+  @Expose()
   createdAt: Date
 
   @Expose()

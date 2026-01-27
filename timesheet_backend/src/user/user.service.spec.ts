@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UserService } from './user.service';
-import { User } from './entities/user.entity';
-import { Role } from './entities/role.enum';
-import { CurrentUserService } from '../common/current-user.service';
+import { User } from './entities/user.entity'
+import { Role } from './entities/role.enum'
+import { CurrentUserService } from '../common/current-user.service'
 import { ConflictException, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common'
 import { compare } from 'bcryptjs'
+import { Profile } from '../profiles/entities/profile.entity'
 
 const mockUserRepository = {
   create: jest.fn(),
@@ -13,14 +14,18 @@ const mockUserRepository = {
   findOne: jest.fn(),
   find: jest.fn(),
   delete: jest.fn(),
-};
+}
+
+const mockProfileRepository = {
+  findOne: jest.fn(),
+}
 
 const mockCurrentUserService = {
   get: jest.fn(),
-};
+}
 
 describe('UserService', () => {
-  let service: UserService;
+  let service: UserService
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -31,26 +36,34 @@ describe('UserService', () => {
           useValue: mockUserRepository,
         },
         {
+          provide: getRepositoryToken(Profile),
+          useValue: mockProfileRepository,
+        },
+        {
           provide: CurrentUserService,
           useValue: mockCurrentUserService,
         },
       ],
     }).compile();
 
-    service = await module.resolve<UserService>(UserService);
-  });
+    service = await module.resolve<UserService>(UserService)
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
 
   describe('create', () => {
     it('should throw Forbidden if actor is not Admin', async () => {
-      mockCurrentUserService.get.mockReturnValue({ role: Role.User });
-      await expect(service.createUser({ email: 'e', password: 'p', role: Role.User })).rejects.toThrow(ForbiddenException);
-    });
+      mockCurrentUserService.get.mockReturnValue({ role: Role.User })
+      await expect(service.createUser({ email: 'e', password: 'p', role: Role.User })).rejects.toThrow(ForbiddenException)
+    })
 
     it('should throw Conflict if email exists', async () => {
-      mockCurrentUserService.get.mockReturnValue({ role: Role.Admin });
-      mockUserRepository.findOne.mockResolvedValue({ id: 'u1' });
-      await expect(service.createUser({ email: 'e', password: 'p', role: Role.User })).rejects.toThrow(ConflictException);
-    });
+      mockCurrentUserService.get.mockReturnValue({ role: Role.Admin })
+      mockUserRepository.findOne.mockResolvedValue({ id: 'u1' })
+      await expect(service.createUser({ email: 'e', password: 'p', role: Role.User })).rejects.toThrow(ConflictException)
+    })
 
     it('should create user', async () => {
       mockCurrentUserService.get.mockReturnValue({ role: Role.Admin })
@@ -64,22 +77,51 @@ describe('UserService', () => {
       expect(result.role).toEqual(dto.role)
       expect(result.password).not.toEqual(dto.password)
       await expect(compare(dto.password, result.password)).resolves.toBe(true)
-    });
-  });
+    })
+  })
+
+  describe('updateUserProfile', () => {
+    it('should update profile id when provided', async () => {
+      mockCurrentUserService.get.mockReturnValue({ id: 'admin-id', role: Role.Admin })
+      const user = { id: 'user-1', profileId: null }
+      mockUserRepository.findOne.mockResolvedValue(user)
+      mockProfileRepository.findOne.mockResolvedValue({ id: 'profile-1' })
+      mockUserRepository.save.mockResolvedValue({ ...user, profileId: 'profile-1' })
+
+      const result = await service.updateUserProfile('user-1', { profileId: ' profile-1 ' })
+
+      expect(mockProfileRepository.findOne).toHaveBeenCalledWith({ where: { id: 'profile-1' } })
+      expect(mockUserRepository.save).toHaveBeenCalledWith(expect.objectContaining({ profileId: 'profile-1' }))
+      expect(result).toEqual(expect.objectContaining({ profileId: 'profile-1' }))
+    })
+
+    it('should clear profile id when null is provided', async () => {
+      mockCurrentUserService.get.mockReturnValue({ id: 'admin-id', role: Role.Admin })
+      const user = { id: 'user-1', profileId: 'profile-1' }
+      mockUserRepository.findOne.mockResolvedValue(user)
+      mockUserRepository.save.mockResolvedValue({ ...user, profileId: null })
+
+      const result = await service.updateUserProfile('user-1', { profileId: null })
+
+      expect(mockProfileRepository.findOne).not.toHaveBeenCalled()
+      expect(mockUserRepository.save).toHaveBeenCalledWith(expect.objectContaining({ profileId: null }))
+      expect(result).toEqual(expect.objectContaining({ profileId: null }))
+    })
+  })
 
   describe('delete', () => {
       it('should throw BadRequest if deleting self', async () => {
-          mockCurrentUserService.get.mockReturnValue({ id: 'admin-id', role: Role.Admin });
-          await expect(service.deleteUser('admin-id')).rejects.toThrow(BadRequestException);
-      });
+          mockCurrentUserService.get.mockReturnValue({ id: 'admin-id', role: Role.Admin })
+          await expect(service.deleteUser('admin-id')).rejects.toThrow(BadRequestException)
+      })
 
       it('should delete user', async () => {
-          mockCurrentUserService.get.mockReturnValue({ id: 'admin-id', role: Role.Admin });
-          mockUserRepository.findOne.mockResolvedValue({ id: 'other-id' });
-          mockUserRepository.delete.mockResolvedValue({});
+          mockCurrentUserService.get.mockReturnValue({ id: 'admin-id', role: Role.Admin })
+          mockUserRepository.findOne.mockResolvedValue({ id: 'other-id' })
+          mockUserRepository.delete.mockResolvedValue({})
 
-          await service.deleteUser('other-id');
-          expect(mockUserRepository.delete).toHaveBeenCalledWith('other-id');
-      });
-  });
-});
+          await service.deleteUser('other-id')
+          expect(mockUserRepository.delete).toHaveBeenCalledWith('other-id')
+      })
+  })
+})

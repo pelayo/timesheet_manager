@@ -110,6 +110,22 @@ describe('ProjectsService', () => {
     });
   });
 
+  describe('updateBudget', () => {
+    it('should delegate to update with budget changes', async () => {
+      const project = { id: 'uuid', name: 'Old', budgetAmount: 100, budgetCurrency: 'USD' }
+      const dto = { budgetAmount: 250, budgetCurrency: 'EUR' }
+      const updated = { ...project, ...dto }
+
+      mockProjectRepository.findOne.mockResolvedValue(project)
+      mockProjectRepository.save.mockResolvedValue(updated)
+
+      const result = await service.updateBudget('uuid', dto)
+
+      expect(result).toEqual(updated)
+      expect(mockProjectRepository.save).toHaveBeenCalledWith(updated)
+    })
+  })
+
   describe('findForUser', () => {
       it('should return projects for a user', async () => {
           const userId = 'user-uuid';

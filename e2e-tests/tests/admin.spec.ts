@@ -12,7 +12,8 @@ test.describe('Admin Flows', () => {
     await expect(page.getByText('Welcome to Admin Dashboard')).toBeVisible()
 
     // 2. Create Global Project
-    await page.click('text=Projects')
+    await page.getByRole('button', { name: 'Projects' }).click()
+    await page.waitForURL('/projects')
     await page.click('text=Add Project')
     
     const globalName = `Global Proj ${Date.now()}`
@@ -22,8 +23,11 @@ test.describe('Admin Flows', () => {
     // The UI uses MUI Checkbox with FormControlLabel "Global (Available to everyone)"
     await page.click('label:has-text("Global")')
     await page.click('button:has-text("Save")')
+    await expect(page.getByRole('dialog')).not.toBeVisible()
 
-    await page.getByRole('textbox', { name: 'Search Projects' }).fill(globalName)
+    const projectSearch = page.getByRole('textbox', { name: 'Search Projects' })
+    await expect(projectSearch).toBeVisible()
+    await projectSearch.fill(globalName)
     await expect(page.getByText(globalName)).toBeVisible()
     await expect(page.getByRole('row', { name: globalName }).getByRole('cell', { name: 'Global', exact: true })).toBeVisible()
 
@@ -36,7 +40,8 @@ test.describe('Admin Flows', () => {
     await expect(page.getByText('Global Task 1')).toBeVisible()
 
     // 4. Create User
-    await page.click('text=Users')
+    await page.getByRole('button', { name: 'Users' }).click()
+    await page.waitForURL('/users')
     await page.click('text=Add User')
     const userEmail = `user${Date.now()}@test.com`
     await page.fill('input[name="email"]', userEmail)

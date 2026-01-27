@@ -5,6 +5,7 @@ import { Project } from './entities/project.entity';
 import { ProjectMember } from '../project-members/entities/project-member.entity';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { UpdateProjectBudgetDto } from './dto/update-project-budget.dto'
 
 @Injectable()
 export class ProjectsService {
@@ -60,6 +61,10 @@ export class ProjectsService {
     const project = await this.findOne(id);
     const updated = Object.assign(project, dto);
     return this.projectRepository.save(updated);
+  }
+
+  async updateBudget(id: string, dto: UpdateProjectBudgetDto): Promise<Project> {
+    return this.update(id, dto)
   }
 
   async findForUser(userId: string): Promise<Project[]> {

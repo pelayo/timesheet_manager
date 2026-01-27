@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer'
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator'
+import { IsEmail, IsEnum, IsOptional, IsString, IsUUID, MinLength } from 'class-validator'
 import { Role } from '../entities/role.enum'
 
 export class UpdateUserDto {
@@ -16,4 +16,8 @@ export class UpdateUserDto {
   @IsOptional()
   @Type(() => String)
   role?: Role
+
+  @IsUUID()
+  @IsOptional()
+  profileId?: string | null
 }
