@@ -21,6 +21,8 @@ interface Project {
   isArchived: boolean;
   isGlobal: boolean;
   isChargeable: boolean;
+  budgetAmount: number
+  budgetCurrency: string
 }
 
 export const ProjectDetail = () => {
@@ -131,6 +133,9 @@ export const ProjectDetail = () => {
           </Typography>
           <Typography variant="caption" display="block">
             Chargeable: {project.isChargeable ? 'Yes' : 'No'}
+          </Typography>
+          <Typography variant="caption" display="block">
+            Budget: {project.budgetAmount} {project.budgetCurrency}
           </Typography>
         </Box>
       </Paper>

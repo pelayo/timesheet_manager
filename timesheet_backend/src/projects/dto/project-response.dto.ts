@@ -23,6 +23,12 @@ export class ProjectResponseDto {
   isChargeable: boolean;
 
   @Expose()
+  budgetAmount: number
+
+  @Expose()
+  budgetCurrency: string
+
+  @Expose()
   createdAt: Date;
 
   @Expose()
