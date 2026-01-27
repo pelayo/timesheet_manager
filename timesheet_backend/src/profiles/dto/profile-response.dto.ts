@@ -1,18 +1,23 @@
 import { Expose } from 'class-transformer'
-import { Role } from '../entities/role.enum'
 
-export class UserResponseDto {
+export class ProfileResponseDto {
   @Expose()
   id: string
 
   @Expose()
-  email: string
+  name: string
 
   @Expose()
-  role: Role
+  discipline: string
 
   @Expose()
-  profileId: string | null
+  level: string
+
+  @Expose()
+  costPerHour: number
+
+  @Expose()
+  active: boolean
 
   @Expose()
   createdAt: Date

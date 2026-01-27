@@ -11,6 +11,7 @@ import { TimeEntriesPage } from './features/time-entries/TimeEntriesPage';
 import { StatsPage } from './features/reports/StatsPage';
 import { JobsPage } from './features/jobs/JobsPage';
 import { GlobalTimeAssignments } from './features/time-assignments/GlobalTimeAssignments';
+import { ProfilesList } from './features/profiles/ProfilesList'
 
 const Dashboard = () => <h2>Welcome to Admin Dashboard</h2>;
 
@@ -24,6 +25,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/users" element={<UsersList />} />
           <Route path="/users/:userId" element={<UserDetail />} />
+          <Route path="/profiles" element={<ProfilesList />} />
           <Route path="/projects" element={<ProjectsList />} />
           <Route path="/projects/:projectId" element={<ProjectDetail />} />
           <Route path="/assignments" element={<GlobalTimeAssignments />} />

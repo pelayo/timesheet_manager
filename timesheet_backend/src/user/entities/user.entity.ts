@@ -5,8 +5,11 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm'
 import { Role } from './role.enum'
+import { Profile } from '../../profiles/entities/profile.entity'
 
 @Entity({ name: 'users' })
 export class User {
@@ -22,6 +25,13 @@ export class User {
 
   @Column({ type: 'text' })
   role: Role
+
+  @Column({ name: 'profile_id', type: 'uuid', nullable: true })
+  profileId: string | null
+
+  @ManyToOne(() => Profile, { nullable: true })
+  @JoinColumn({ name: 'profile_id' })
+  profile: Profile | null
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
