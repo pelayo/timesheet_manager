@@ -51,16 +51,21 @@ export const ProjectDetail = () => {
     }
   });
 
-  const { data: stats } = useQuery({
+  const shouldLoadStats = !!projectId && tab === 3
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+  } = useQuery({
     queryKey: ['project-stats', projectId, filters, groupBy],
-    enabled: !!projectId,
+    enabled: shouldLoadStats,
     queryFn: async () => {
-      const params = new URLSearchParams(filters);
-      params.append('groupBy', groupBy);
-      const res = await api.get<any[]>(`/admin/reports/project/${projectId}/stats`, { params });
-      return res.data;
+      const params = new URLSearchParams(filters)
+      params.append('groupBy', groupBy)
+      const res = await api.get<any[]>(`/admin/reports/project/${projectId}/stats`, { params })
+      return res.data
     }
-  });
+  })
 
   const { chartData, seriesKeys } = useMemo(() => {
     if (!stats) return { chartData: [], seriesKeys: [] };
@@ -89,7 +94,8 @@ export const ProjectDetail = () => {
         if (groupBy === 'day') {
           dateMatcher = isSameDay;
         } else if (groupBy === 'week') {
-          dateMatcher = isSameWeek;
+          dateMatcher = (statDate, rangeDate) =>
+            isSameWeek(statDate, rangeDate, { weekStartsOn: 1 })
         } else {
           dateMatcher = isSameMonth;
         }
@@ -140,14 +146,28 @@ export const ProjectDetail = () => {
         </Box>
       </Paper>
       
-      <Paper sx={{ mb: 3 }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+        <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+          <Tab label="Tasks" />
+          <Tab label="Members" />
+          <Tab label="Time Assignments" />
+          <Tab label="Activity" />
+        </Tabs>
+      </Box>
+
+      {tab === 0 && <ProjectTasks />}
+      {tab === 1 && <ProjectMembers />}
+      {tab === 2 && <ProjectTimeAssignments />}
+
+      {tab === 3 && (
+        <Paper sx={{ mb: 3 }}>
           <Box display="flex" justifyContent="flex-end" sx={{ p: 1 }}>
             <ToggleButtonGroup
               value={groupBy}
               exclusive
               size="small"
               onChange={(_, newValue) => {
-                if (newValue) setGroupBy(newValue);
+                if (newValue) setGroupBy(newValue)
               }}
             >
               <ToggleButton value="day">Day</ToggleButton>
@@ -155,26 +175,27 @@ export const ProjectDetail = () => {
               <ToggleButton value="month">Month</ToggleButton>
             </ToggleButtonGroup>
           </Box>
-          <StatsGraph 
-            chartData={chartData} 
-            seriesKeys={seriesKeys} 
-            title="Project Activity (Daily by User)"
-            filters={filters}
-            onFilterChange={setFilters}
-          />
-      </Paper>
-
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)}>
-          <Tab label="Tasks" />
-          <Tab label="Members" />
-          <Tab label="Time Assignments" />
-        </Tabs>
-      </Box>
-
-      {tab === 0 && <ProjectTasks />}
-      {tab === 1 && <ProjectMembers />}
-      {tab === 2 && <ProjectTimeAssignments />}
+          {statsLoading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight={240}>
+              <CircularProgress />
+            </Box>
+          ) : statsError ? (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight={240}>
+              <Typography variant="body2" color="error">
+                Failed to load activity data
+              </Typography>
+            </Box>
+          ) : (
+            <StatsGraph 
+              chartData={chartData} 
+              seriesKeys={seriesKeys} 
+              title="Project Activity (Daily by User)"
+              filters={filters}
+              onFilterChange={setFilters}
+            />
+          )}
+        </Paper>
+      )}
     </Box>
   );
 };

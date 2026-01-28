@@ -51,7 +51,7 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
     this.logger.error({ err: error }, `[Job ${jobId}] Worker failed`)
   }
 
-  async process(job: Job<{ domain?: string; apiKey?: string }>) {
+  async process(job: Job<{ domain?: string; apiKey?: string; since?: string }>) {
     this.logger.info(`Starting Teamwork Import Job ${job.id}`)
 
     try {
@@ -65,7 +65,7 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
     }
   }
 
-  private async runImport(job: Job<{ domain?: string; apiKey?: string }>) {
+  private async runImport(job: Job<{ domain?: string; apiKey?: string; since?: string }>) {
     // Configuration
     const { data, id: jobId } = job
     const envDomain = process.env.TEAMWORK_DOMAIN
@@ -73,6 +73,7 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
 
     const DOMAIN = data.domain || envDomain
     const API_KEY = data.apiKey || envApiKey
+    const since = data.since
 
     if (!DOMAIN || !API_KEY) {
       const error = new Error('Missing Teamwork API credentials.')
@@ -106,6 +107,11 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
     const projectMap = new Map<string, string>() // TW Project ID -> Local Project ID
     const taskMap = new Map<string, string>() // TW Task ID -> Local Task ID
     const defaultTaskMap = new Map<string, string>() // Project ID -> Default Task ID
+
+    const fromDate = this.normalizeSinceDate(since)
+    if (fromDate) {
+      this.logger.info(`[Job ${jobId}] Using fromdate filter: ${fromDate}`)
+    }
 
     this.logger.info(`[Job ${jobId}] 🚀 Starting migration from ${baseURL}...`)
 
@@ -250,7 +256,11 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
     while (hasMore) {
       try {
         await sleep(500) // Throttle paging
-        const { data: timeEntriesData } = await client.get(`/time_entries.json?page=${page}`)
+        const params: Record<string, string | number> = { page }
+        if (fromDate) {
+          params.fromdate = fromDate
+        }
+        const { data: timeEntriesData } = await client.get('/time_entries.json', { params })
         const entries = timeEntriesData['time-entries'] || []
         
         if (entries.length === 0) {
@@ -370,5 +380,20 @@ export class TeamworkImportJob extends WorkerHost implements OnModuleInit {
     return {
       message: `Migration Complete! Imported ${count} time entries. Recovered ${recoveredMissingTaskCount} entries without tasks.`,
     }
+  }
+
+  private normalizeSinceDate(since?: string) {
+    if (!since) return null
+    if (/^\d{4}-\d{2}-\d{2}$/.test(since)) {
+      return since.replace(/-/g, '')
+    }
+    const parsed = new Date(since)
+    if (Number.isNaN(parsed.getTime())) {
+      throw new Error('Invalid since date provided for Teamwork import')
+    }
+    const year = parsed.getUTCFullYear()
+    const month = String(parsed.getUTCMonth() + 1).padStart(2, '0')
+    const day = String(parsed.getUTCDate()).padStart(2, '0')
+    return `${year}${month}${day}`
   }
 }

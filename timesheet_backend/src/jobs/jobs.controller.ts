@@ -1,10 +1,11 @@
-import { BadRequestException, Controller, Get, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { InjectQueue } from '@nestjs/bullmq'
 import type { Queue } from 'bullmq'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
 import * as path from 'path'
 import * as fs from 'fs'
+import { CreateTeamworkImportJobDto } from './dto/create-teamwork-import-job.dto'
 
 @Controller('jobs')
 export class JobsController {
@@ -111,5 +112,14 @@ export class JobsController {
     })
 
     return { id: job.id, message: 'Teamwork Excel import enqueued', filePath: file.path }
+  }
+
+  @Post('teamwork-import')
+  async enqueueTeamworkImport(@Body() dto: CreateTeamworkImportJobDto) {
+    const job = await this.teamworkQueue.add('teamwork-import', {
+      since: dto.since,
+    })
+
+    return { id: job.id, message: 'Teamwork import enqueued', since: dto.since ?? null }
   }
 }

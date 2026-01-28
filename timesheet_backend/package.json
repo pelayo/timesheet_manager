@@ -17,6 +17,7 @@
     "datalake:rebuild": "ts-node -r tsconfig-paths/register src/datalake/commands/rebuild-datalake.ts",
     "migrate": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
     "migrate:teamwork": "ts-node -r tsconfig-paths/register src/scripts/migrate-teamwork.ts",
+    "clean:time-data": "ts-node -r tsconfig-paths/register src/scripts/clean-time-data.ts",
     "rehash:passwords": "ts-node -r tsconfig-paths/register src/scripts/rehash-passwords.ts",
     "seed:workers": "ts-node -r tsconfig-paths/register src/user/commands/create-test-workers.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",

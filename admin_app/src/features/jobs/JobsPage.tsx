@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react'
 import {
   Box,
   Typography,
@@ -15,47 +15,49 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-} from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import ReplayIcon from '@mui/icons-material/Replay';
-import InfoIcon from '@mui/icons-material/Info';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import type { Job } from '../../api/jobs';
-import { getJobs, retryJob, uploadTeamworkExcel } from '../../api/jobs';
+} from '@mui/material'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import ReplayIcon from '@mui/icons-material/Replay'
+import InfoIcon from '@mui/icons-material/Info'
+import UploadFileIcon from '@mui/icons-material/UploadFile'
+import HistoryIcon from '@mui/icons-material/History'
+import type { Job } from '../../api/jobs'
+import { createTeamworkImport, getJobs, retryJob, uploadTeamworkExcel } from '../../api/jobs'
 
 export const JobsPage = () => {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [loading, setLoading] = useState(false)
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [importing, setImporting] = useState(false)
 
   const fetchJobs = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const data = await getJobs();
-      setJobs(data);
+      const data = await getJobs()
+      setJobs(data)
     } catch (error) {
-      console.error('Failed to fetch jobs', error);
+      console.error('Failed to fetch jobs', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchJobs();
-    const interval = setInterval(fetchJobs, 5000); // Poll every 5s
-    return () => clearInterval(interval);
-  }, []);
+    fetchJobs()
+    const interval = setInterval(fetchJobs, 5000) // Poll every 5s
+    return () => clearInterval(interval)
+  }, [])
 
   const handleRetry = async (id: string) => {
     try {
-      await retryJob(id);
-      fetchJobs();
+      await retryJob(id)
+      fetchJobs()
     } catch (error) {
-      console.error('Failed to retry job', error);
+      console.error('Failed to retry job', error)
     }
-  };
+  }
 
   const handleUploadClick = () => {
     fileInputRef.current?.click()
@@ -76,16 +78,31 @@ export const JobsPage = () => {
     }
   }
 
+  const handleImportLastMonth = async () => {
+    setImporting(true)
+    try {
+      const lastMonth = new Date()
+      lastMonth.setMonth(lastMonth.getMonth() - 1)
+      const since = lastMonth.toISOString().slice(0, 10)
+      await createTeamworkImport(since)
+      fetchJobs()
+    } catch (error) {
+      console.error('Failed to enqueue teamwork import', error)
+    } finally {
+      setImporting(false)
+    }
+  }
+
   const getStatusColor = (state: string) => {
     switch (state) {
-      case 'completed': return 'success';
-      case 'failed': return 'error';
-      case 'active': return 'primary';
-      case 'created': return 'default';
-      case 'retry': return 'warning';
-      default: return 'default';
+      case 'completed': return 'success'
+      case 'failed': return 'error'
+      case 'active': return 'primary'
+      case 'created': return 'default'
+      case 'retry': return 'warning'
+      default: return 'default'
     }
-  };
+  }
 
   return (
     <Box>
@@ -99,6 +116,13 @@ export const JobsPage = () => {
             hidden
             onChange={handleFileChange}
           />
+          <Button
+            startIcon={<HistoryIcon />}
+            onClick={handleImportLastMonth}
+            disabled={importing}
+          >
+            Import Teamwork Last Month
+          </Button>
           <Button
             startIcon={<UploadFileIcon />}
             onClick={handleUploadClick}
@@ -166,5 +190,5 @@ export const JobsPage = () => {
         </DialogContent>
       </Dialog>
     </Box>
-  );
-};
+  )
+}

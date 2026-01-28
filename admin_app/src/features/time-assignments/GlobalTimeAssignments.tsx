@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   Box,
   CircularProgress,
   IconButton,
+  InputAdornment,
   Paper,
+  TextField,
   Table,
   TableBody,
   TableCell,
@@ -15,6 +17,7 @@ import {
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import SearchIcon from '@mui/icons-material/Search'
 import { addWeeks, format, parseISO, startOfWeek } from 'date-fns'
 import { api } from '../../api/axios'
 
@@ -46,13 +49,16 @@ interface CumulativeTeamworkSummary {
   hours: number
 }
 
-const WEEKS_PER_PAGE = 12
+const WEEKS_PER_PAGE = 4
+const USERS_PER_PAGE = 20
 
 export const GlobalTimeAssignments = () => {
   const [currentWeek, setCurrentWeek] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 }),
   )
   const weekStartStr = format(currentWeek, 'yyyy-MM-dd')
+  const [userPage, setUserPage] = useState(0)
+  const [userSearch, setUserSearch] = useState('')
 
   const { data: me, isLoading: meLoading } = useQuery({
     queryKey: ['me'],
@@ -63,12 +69,20 @@ export const GlobalTimeAssignments = () => {
     retry: false,
   })
 
-  const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ['users', 'all'],
+  const { data: usersData, isLoading: usersLoading, isFetching: usersFetching } = useQuery({
+    queryKey: ['users', 'page', userPage, 'limit', USERS_PER_PAGE, 'search', userSearch],
     queryFn: async () => {
-      const res = await api.get<UsersResponse>('/admin/users?limit=1000')
+      const params = new URLSearchParams({
+        page: (userPage + 1).toString(),
+        limit: USERS_PER_PAGE.toString(),
+      })
+      if (userSearch.trim()) {
+        params.set('search', userSearch.trim())
+      }
+      const res = await api.get<UsersResponse>('/admin/users', { params })
       return res.data
-    }
+    },
+    placeholderData: keepPreviousData,
   })
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
@@ -122,25 +136,9 @@ export const GlobalTimeAssignments = () => {
 
   const users = useMemo(() => {
     const baseUsers = usersData?.items ?? []
-    const summaryUsers = new Map<string, User>()
-    summary?.forEach((item) => {
-      summaryUsers.set(item.userId, { id: item.userId, email: item.userEmail, role: 'user' })
-    })
-    const cumulativeUsers = new Map<string, User>()
-    cumulativeSummary?.forEach((item) => {
-      cumulativeUsers.set(item.userId, { id: item.userId, email: item.userEmail, role: 'user' })
-    })
-
-    const combined = new Map<string, User>()
-    baseUsers.forEach((user) => combined.set(user.id, user))
-    summaryUsers.forEach((user, id) => {
-      if (!combined.has(id)) combined.set(id, user)
-    })
-    cumulativeUsers.forEach((user, id) => {
-      if (!combined.has(id)) combined.set(id, user)
-    })
-
-    return Array.from(combined.values()).filter(
+    const summaryUsers = new Set((summary ?? []).map((item) => item.userId))
+    const cumulativeUsers = new Set((cumulativeSummary ?? []).map((item) => item.userId))
+    return baseUsers.filter(
       (user) => user.role === 'user' || summaryUsers.has(user.id) || cumulativeUsers.has(user.id),
     )
   }, [usersData, summary, cumulativeSummary])
@@ -150,10 +148,34 @@ export const GlobalTimeAssignments = () => {
     [currentWeek],
   )
 
+  const cellSx = {
+    borderRight: '1px solid',
+    borderColor: 'divider',
+    '&:last-child': {
+      borderRight: 0,
+    },
+  }
+
   const handlePrev = () => setCurrentWeek((prev) => addWeeks(prev, -WEEKS_PER_PAGE))
   const handleNext = () => setCurrentWeek((prev) => addWeeks(prev, WEEKS_PER_PAGE))
 
-  if (meLoading || usersLoading || summaryLoading || (showCumulative && cumulativeLoading)) {
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setUserSearch(event.target.value)
+    setUserPage(0)
+  }
+
+  const formatUserLabel = (email: string) => {
+    const name = email.split('@')[0] ?? email
+    if (name.length <= 18) return name
+    return `${name.slice(0, 18)}...`
+  }
+
+  if (
+    meLoading ||
+    summaryLoading ||
+    (showCumulative && cumulativeLoading) ||
+    (usersLoading && !usersData)
+  ) {
     return <CircularProgress />
   }
 
@@ -169,19 +191,43 @@ export const GlobalTimeAssignments = () => {
           <IconButton onClick={handleNext}><ArrowForwardIcon /></IconButton>
         </Box>
       </Box>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <TextField
+          size="small"
+          placeholder="Search username"
+          value={userSearch}
+          onChange={handleSearchChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+            endAdornment: usersFetching ? (
+              <InputAdornment position="end">
+                <CircularProgress size={16} />
+              </InputAdornment>
+            ) : undefined,
+          }}
+          sx={{ minWidth: 240 }}
+        />
+        <Typography variant="body2">
+          Page {userPage + 1} of {Math.max(1, Math.ceil((usersData?.total ?? 0) / USERS_PER_PAGE))}
+        </Typography>
+      </Box>
 
       <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>User</TableCell>
+              <TableCell sx={{ minWidth: 140, ...cellSx }}>User</TableCell>
               {showCumulative && (
-                <TableCell align="center">
+                <TableCell align="center" sx={{ minWidth: 260, ...cellSx }}>
                   Teamwork to date
                 </TableCell>
               )}
               {weeks.map((week) => (
-                <TableCell key={week.toISOString()} align="center">
+                <TableCell key={week.toISOString()} align="center" sx={cellSx}>
                   {format(week, 'MMM d')}
                 </TableCell>
               ))}
@@ -190,9 +236,11 @@ export const GlobalTimeAssignments = () => {
           <TableBody>
             {users.map((user) => (
               <TableRow key={user.id}>
-                <TableCell>{user.email}</TableCell>
+                <TableCell title={user.email} sx={cellSx}>
+                  {formatUserLabel(user.email)}
+                </TableCell>
                 {showCumulative && (
-                  <TableCell align="center" sx={{ minWidth: 180 }}>
+                  <TableCell align="center" sx={{ minWidth: 260, ...cellSx }}>
                     {(cumulativeMap.get(user.id) ?? []).length === 0
                       ? ''
                       : (
@@ -210,7 +258,11 @@ export const GlobalTimeAssignments = () => {
                   const weekStart = format(week, 'yyyy-MM-dd')
                   const items = summaryMap.get(`${user.id}:${weekStart}`) ?? []
                   return (
-                    <TableCell key={`${user.id}-${weekStart}`} align="center" sx={{ minWidth: 160 }}>
+                    <TableCell
+                      key={`${user.id}-${weekStart}`}
+                      align="center"
+                      sx={{ minWidth: 120, ...cellSx }}
+                    >
                       {items.length === 0
                         ? ''
                         : (
@@ -229,7 +281,11 @@ export const GlobalTimeAssignments = () => {
             ))}
             {users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={WEEKS_PER_PAGE + 1 + (showCumulative ? 1 : 0)} align="center">
+                <TableCell
+                  colSpan={WEEKS_PER_PAGE + 1 + (showCumulative ? 1 : 0)}
+                  align="center"
+                  sx={cellSx}
+                >
                   No assignments found
                 </TableCell>
               </TableRow>
@@ -237,6 +293,22 @@ export const GlobalTimeAssignments = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      <Box display="flex" justifyContent="flex-end" mt={2} gap={1}>
+        <IconButton
+          size="small"
+          onClick={() => setUserPage((prev) => Math.max(prev - 1, 0))}
+          disabled={userPage === 0}
+        >
+          <ArrowBackIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          size="small"
+          onClick={() => setUserPage((prev) => prev + 1)}
+          disabled={(userPage + 1) * USERS_PER_PAGE >= (usersData?.total ?? 0)}
+        >
+          <ArrowForwardIcon fontSize="small" />
+        </IconButton>
+      </Box>
     </Box>
   )
 }
